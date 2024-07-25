@@ -65,6 +65,14 @@ void ProcessorRelabelMetricNative::Process(PipelineEventGroup& metricGroup) {
         }
     }
     events.resize(wIdx);
+    // 自监控指标
+    auto streamModeId = metricGroup.GetMetadata(EventGroupMetaKey::STREAM_MODE_ID);
+    if (streamModeId.empty()) {
+        // 构造自监控指标
+    } else if (!streamModeId.empty() && !metricGroup.GetMetadata(EventGroupMetaKey::STREAM_MODE_LAST).empty()) {
+        // 构造自监控指标
+        auto tmpDroppedSamples = mAutoMetricsXXXXX[streamModeId.to_string()];
+    }
     return;
 }
 

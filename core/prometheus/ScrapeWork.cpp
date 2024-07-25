@@ -25,6 +25,7 @@
 #include <utility>
 
 #include "FeedbackQueueKey.h"
+#include "PipelineEventGroup.h"
 #include "StringTools.h"
 #include "TextParser.h"
 #include "common/TimeUtil.h"
@@ -107,14 +108,32 @@ void ScrapeWork::ScrapeAndPush() {
     // TODO: scrape超时处理逻辑，和出错处理
     auto httpResponse = Scrape();
     if (httpResponse.statusCode == 200) {
-        // text parser
         auto parser = TextParser();
-        auto eventGroup
-            = parser.Parse(httpResponse.content, defaultTs, mScrapeConfigPtr->mJobName, mScrapeTarget.mHost);
 
-        // 发送到对应的处理队列
-        // TODO: 如果框架处理超时了处理逻辑，如果超时了如何保证下一次采集有效并且发送
-        PushEventGroup(std::move(eventGroup));
+        // 判断是否进入 Stream Mode
+        if ([]() { return true; }()) {
+            string streamModeId = ToString(defaultTs);
+            size_t pos = 0;
+            while (pos < httpResponse.content.size()) {
+                string rawTextBatch = httpResponse.content.substr(pos, 20000);
+                pos += 20000;
+                auto eventGroup
+                    = parser.Parse(httpResponse.content, defaultTs, mScrapeConfigPtr->mJobName, mScrapeTarget.mHost);
+                eventGroup.SetMetadata(EventGroupMetaKey::STREAM_MODE_ID, streamModeId);
+                if (pos < httpResponse.content.size()) {
+                    eventGroup.SetMetadata(EventGroupMetaKey::STREAM_MODE_LAST, ToString("1"));
+                }
+                PushEventGroup(std::move(eventGroup));
+            }
+        } else {
+            auto eventGroup
+                = parser.Parse(httpResponse.content, defaultTs, mScrapeConfigPtr->mJobName, mScrapeTarget.mHost);
+
+            // 发送到对应的处理队列
+            // TODO: 如果框架处理超时了处理逻辑，如果超时了如何保证下一次采集有效并且发送
+            PushEventGroup(std::move(eventGroup));
+        }
+
     } else {
         // scrape failed
         string headerStr;

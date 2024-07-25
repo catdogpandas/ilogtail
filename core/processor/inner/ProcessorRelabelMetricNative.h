@@ -16,6 +16,8 @@
 
 #pragma once
 
+#include <cstdint>
+#include <map>
 #include <string>
 
 #include "PipelineEventGroup.h"
@@ -36,9 +38,10 @@ protected:
     bool IsSupportedEvent(const PipelineEventPtr& e) const override;
 
 private:
-    bool ProcessEvent( PipelineEventPtr& e);
+    bool ProcessEvent(PipelineEventPtr& e);
 
     std::vector<RelabelConfig> mRelabelConfigs;
+    std::map<std::string, uint64_t> mAutoMetricsXXXXX;
 
 #ifdef APSARA_UNIT_TEST_MAIN
     friend class ProcessorRelabelMetricNativeUnittest;

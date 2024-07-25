@@ -51,6 +51,9 @@ enum class EventGroupMetaKey {
     CONTAINER_IMAGE_NAME,
     CONTAINER_IMAGE_ID,
 
+    STREAM_MODE_ID,
+    STREAM_MODE_LAST,
+
     SOURCE_ID
 };
 
