@@ -64,6 +64,7 @@ void ScrapeWork::StartScrapeLoop() {
     if (!mScrapeLoopThread) {
         mScrapeLoopThread = CreateThread([this]() { ScrapeLoop(); });
     }
+    // 以异步的方式实现
 }
 
 void ScrapeWork::StopScrapeLoop() {

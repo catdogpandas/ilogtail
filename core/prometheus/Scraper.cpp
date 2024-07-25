@@ -17,8 +17,10 @@
 #include "Scraper.h"
 
 #include <atomic>
+#include <functional>
 #include <memory>
 #include <mutex>
+#include <queue>
 #include <string>
 #include <thread>
 #include <unordered_map>
@@ -66,9 +68,16 @@ void ScraperGroup::UpdateScrapeWork(const string& jobName) {
                                                         mScrapeJobMap[jobName]->mQueueKey,
                                                         mScrapeJobMap[jobName]->mInputIndex);
             sWMap[targetHash]->SetUnRegisterMs(mUnRegisterMs);
-            sWMap[targetHash]->StartScrapeLoop();
+            // sWMap[targetHash]->StartScrapeLoop();
+            // 要保证实时性
+            AddScrapeWork(sWMap[targetHash].getScrapeLoop());
         }
     }
+}
+
+void AddScrapeWork(function<void()> scrapeWork){
+    // queue<int> scrapeWorkQueue;
+    scrapeWorkQueue.push(scrapeWork);
 }
 
 void ScraperGroup::UpdateScrapeJob(std::unique_ptr<ScrapeJob> scrapeJobPtr) {
