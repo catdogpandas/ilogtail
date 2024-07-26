@@ -15,6 +15,7 @@
  */
 
 #include "MetricEvent.h"
+#include "StringTools.h"
 #include "TextParser.h"
 #include "common/JsonUtil.h"
 #include "processor/inner/ProcessorRelabelMetricNative.h"
@@ -29,6 +30,7 @@ public:
 
     void TestInit();
     void TestProcess();
+    void TestAddSelfMonitorMetrics();
 
     PipelineContext mContext;
 };
@@ -39,7 +41,8 @@ void ProcessorRelabelMetricNativeUnittest::TestInit() {
     processor.SetContext(mContext);
 
     // success config
-    string configStr, errorMsg;
+    string configStr;
+    string errorMsg;
     configStr = R"JSON(
         {
             "metric_relabel_configs": [
@@ -77,7 +80,8 @@ void ProcessorRelabelMetricNativeUnittest::TestProcess() {
     ProcessorRelabelMetricNative processor;
     processor.SetContext(mContext);
 
-    string configStr, errorMsg;
+    string configStr;
+    string errorMsg;
     configStr = configStr + R"(
         {
             "metric_relabel_configs": [
@@ -144,8 +148,71 @@ test_metric8{k1="v1", k3="v2", } 9.9410452992e+10 1715829785083
     // test_metric8 is dropped by relabel config
 }
 
+void ProcessorRelabelMetricNativeUnittest::TestAddSelfMonitorMetrics() {
+    // make config
+    Json::Value config;
+
+    ProcessorRelabelMetricNative processor;
+    processor.SetContext(mContext);
+
+    string configStr;
+    string errorMsg;
+    configStr = configStr + R"(
+        {
+            "scrape_timeout": "15s",
+            "sample_limit": 1000,
+            "series_limit": 1000
+        }
+    )";
+    APSARA_TEST_TRUE(ParseJsonTable(configStr, config, errorMsg));
+
+    // init
+    APSARA_TEST_TRUE(processor.Init(config));
+
+    // make events
+    auto parser = TextParser();
+    auto eventGroup = parser.Parse(R"""(
+# begin
+
+test_metric1{k1="v1", k2="v2"} 1.0
+  test_metric2{k1="v1", k2="v2"} 2.0 1234567890
+test_metric3{k1="v1",k2="v2"} 9.9410452992e+10
+  test_metric4{k1="v1",k2="v2"} 9.9410452992e+10 1715829785083
+  test_metric5{k1="v1", k2="v2" } 9.9410452992e+10 1715829785083
+test_metric6{k1="v1",k2="v2",} 9.9410452992e+10 1715829785083
+test_metric7{k1="v1",k3="2", } 9.9410452992e+10 1715829785083  
+test_metric8{k1="v1", k3="v2", } 9.9410452992e+10 1715829785083
+
+# end
+    )""");
+
+    APSARA_TEST_EQUAL((size_t)8, eventGroup.GetEvents().size());
+
+    // without metadata
+    processor.AddSelfMonitorMetrics(eventGroup);
+    APSARA_TEST_EQUAL((size_t)8, eventGroup.GetEvents().size());
+
+    // with metadata
+    eventGroup.SetMetadata(EventGroupMetaKey::PROMETHEUS_SCRAPE_TIMESTAMP, ToString(1715829785083));
+    eventGroup.SetMetadata(EventGroupMetaKey::PROMETHEUS_SAMPLES_SCRAPED, ToString(8));
+    eventGroup.SetMetadata(EventGroupMetaKey::PROMETHEUS_SCRAPE_DURATION, ToString((double)1.0 * 1500000000));
+    eventGroup.SetMetadata(EventGroupMetaKey::PROMETHEUS_SCRAPE_RESPONSE_SIZE, ToString(2325));
+    eventGroup.SetMetadata(EventGroupMetaKey::PROMETHEUS_UP_STATE, ToString(1));
+    processor.AddSelfMonitorMetrics(eventGroup);
+
+    APSARA_TEST_EQUAL((size_t)15, eventGroup.GetEvents().size());
+    APSARA_TEST_EQUAL(1.5, eventGroup.GetEvents().at(8).Cast<MetricEvent>().GetValue<UntypedSingleValue>()->mValue);
+    APSARA_TEST_EQUAL(2325, eventGroup.GetEvents().at(9).Cast<MetricEvent>().GetValue<UntypedSingleValue>()->mValue);
+    APSARA_TEST_EQUAL(1000, eventGroup.GetEvents().at(10).Cast<MetricEvent>().GetValue<UntypedSingleValue>()->mValue);
+    APSARA_TEST_EQUAL(8, eventGroup.GetEvents().at(11).Cast<MetricEvent>().GetValue<UntypedSingleValue>()->mValue);
+    APSARA_TEST_EQUAL(8, eventGroup.GetEvents().at(12).Cast<MetricEvent>().GetValue<UntypedSingleValue>()->mValue);
+    APSARA_TEST_EQUAL(15, eventGroup.GetEvents().at(13).Cast<MetricEvent>().GetValue<UntypedSingleValue>()->mValue);
+    APSARA_TEST_EQUAL(1, eventGroup.GetEvents().at(14).Cast<MetricEvent>().GetValue<UntypedSingleValue>()->mValue);
+}
+
 UNIT_TEST_CASE(ProcessorRelabelMetricNativeUnittest, TestInit)
 UNIT_TEST_CASE(ProcessorRelabelMetricNativeUnittest, TestProcess)
+UNIT_TEST_CASE(ProcessorRelabelMetricNativeUnittest, TestAddSelfMonitorMetrics)
 
 } // namespace logtail
 

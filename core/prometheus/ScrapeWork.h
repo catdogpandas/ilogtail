@@ -53,10 +53,11 @@ public:
 private:
     void ScrapeLoop();
     void ScrapeAndPush();
-
     uint64_t GetRandSleep();
     sdk::HttpMessage Scrape();
     void PushEventGroup(PipelineEventGroup&&);
+
+    void SetSelfMonitorMeta(PipelineEventGroup&, uint64_t);
 
     std::shared_ptr<ScrapeConfig> mScrapeConfigPtr;
     ScrapeTarget mScrapeTarget;
@@ -72,6 +73,12 @@ private:
 
     // zero-cost upgrade
     uint64_t mUnRegisterMs;
+
+    // self monitor
+    uint64_t mScrapeDurationNanoSeconds;
+    uint64_t mScrapeResponseSizeBytes;
+    uint64_t mSamplesScraped;
+    uint64_t mUpState;
 
 #ifdef APSARA_UNIT_TEST_MAIN
     friend class ScrapeWorkUnittest;

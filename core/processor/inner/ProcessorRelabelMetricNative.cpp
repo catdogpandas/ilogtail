@@ -19,6 +19,7 @@
 
 #include <cstddef>
 
+#include "common/StringTools.h"
 #include "models/MetricEvent.h"
 #include "models/PipelineEventGroup.h"
 #include "models/PipelineEventPtr.h"
@@ -45,6 +46,26 @@ bool ProcessorRelabelMetricNative::Init(const Json::Value& config) {
         }
         return true;
     }
+
+    if (config.isMember(prometheus::SCRAPE_TIMEOUT) && config[prometheus::SCRAPE_TIMEOUT].isString()) {
+        string tmpScrapeTimeoutString = config[prometheus::SCRAPE_TIMEOUT].asString();
+        if (EndWith(tmpScrapeTimeoutString, "s")) {
+            mScrapeTimeoutSeconds = stoll(tmpScrapeTimeoutString.substr(0, tmpScrapeTimeoutString.find('s')));
+        } else if (EndWith(tmpScrapeTimeoutString, "m")) {
+            mScrapeTimeoutSeconds = stoll(tmpScrapeTimeoutString.substr(0, tmpScrapeTimeoutString.find('m'))) * 60;
+        }
+    }
+    if (config.isMember(prometheus::SAMPLE_LIMIT) && config[prometheus::SAMPLE_LIMIT].isInt64()) {
+        mSampleLimit = config[prometheus::SAMPLE_LIMIT].asInt64();
+    } else {
+        mSampleLimit = -1;
+    }
+    if (config.isMember(prometheus::SERIES_LIMIT) && config[prometheus::SERIES_LIMIT].isInt64()) {
+        mSeriesLimit = config[prometheus::SERIES_LIMIT].asInt64();
+    } else {
+        mSeriesLimit = -1;
+    }
+
     return true;
 }
 
@@ -65,6 +86,9 @@ void ProcessorRelabelMetricNative::Process(PipelineEventGroup& metricGroup) {
         }
     }
     events.resize(wIdx);
+
+    // self monitor
+    AddSelfMonitorMetrics(metricGroup);
 }
 
 bool ProcessorRelabelMetricNative::IsSupportedEvent(const PipelineEventPtr& e) const {
@@ -101,6 +125,71 @@ bool ProcessorRelabelMetricNative::ProcessEvent(PipelineEventPtr& e) {
         return true;
     }
     return false;
+}
+
+void ProcessorRelabelMetricNative::AddSelfMonitorMetrics(PipelineEventGroup& metricGroup) {
+    // if up is set, then add self monitor metrics
+    if (metricGroup.GetMetadata(EventGroupMetaKey::PROMETHEUS_UP_STATE).empty()) {
+        return;
+    }
+
+    StringView scrapeTimestampStr = metricGroup.GetMetadata(EventGroupMetaKey::PROMETHEUS_SCRAPE_TIMESTAMP);
+    auto scrapeTimestamp = StringTo<time_t>(scrapeTimestampStr.to_string());
+
+    StringView scrapeDurationNanoSecondsStr = metricGroup.GetMetadata(EventGroupMetaKey::PROMETHEUS_SCRAPE_DURATION);
+    double scrapeDurationSeconds = StringTo<double>(scrapeDurationNanoSecondsStr.to_string()) / 1000 / 1000 / 1000;
+
+    StringView scrapeResponseSizeStr = metricGroup.GetMetadata(EventGroupMetaKey::PROMETHEUS_SCRAPE_RESPONSE_SIZE);
+    auto scrapeResponseSize = StringTo<uint64_t>(scrapeResponseSizeStr.to_string());
+
+    uint64_t samplesPostMetricRelabel = metricGroup.GetEvents().size();
+
+    auto samplesScraped
+        = StringTo<uint64_t>(metricGroup.GetMetadata(EventGroupMetaKey::PROMETHEUS_SAMPLES_SCRAPED).to_string());
+
+    uint64_t upState = metricGroup.GetMetadata(EventGroupMetaKey::PROMETHEUS_UP_STATE).to_string() == "1" ? 1 : 0;
+
+    MetricEvent* e = nullptr;
+
+    e = metricGroup.AddMetricEvent();
+    e->SetName(prometheus::SCRAPE_DURATION_SECONDS);
+    e->SetValue<UntypedSingleValue>(scrapeDurationSeconds);
+    e->SetTimestamp(scrapeTimestamp);
+
+    e = metricGroup.AddMetricEvent();
+    e->SetName(prometheus::SCRAPE_RESPONSE_SIZE_BYTES);
+    e->SetValue<UntypedSingleValue>(scrapeResponseSize * 1.0);
+    e->SetTimestamp(scrapeTimestamp);
+
+    if (mSampleLimit > 0) {
+        e = metricGroup.AddMetricEvent();
+        e->SetName(prometheus::SCRAPE_SAMPLES_LIMIT);
+        e->SetValue<UntypedSingleValue>(mSampleLimit * 1.0);
+        e->SetTimestamp(scrapeTimestamp);
+    }
+
+    e = metricGroup.AddMetricEvent();
+    e->SetName(prometheus::SCRAPE_SAMPLES_POST_METRIC_RELABELING);
+    e->SetValue<UntypedSingleValue>(samplesPostMetricRelabel * 1.0);
+    e->SetTimestamp(scrapeTimestamp);
+
+    e = metricGroup.AddMetricEvent();
+    e->SetName(prometheus::SCRAPE_SAMPLES_SCRAPED);
+    e->SetValue<UntypedSingleValue>(samplesScraped * 1.0);
+    e->SetTimestamp(scrapeTimestamp);
+
+    e = metricGroup.AddMetricEvent();
+    e->SetName(prometheus::SCRAPE_TIMEOUT_SECONDS);
+    e->SetValue<UntypedSingleValue>(mScrapeTimeoutSeconds * 1.0);
+    e->SetTimestamp(scrapeTimestamp);
+
+    // up metric must be the last one
+    e = metricGroup.AddMetricEvent();
+    e->SetName(prometheus::UP);
+    e->SetValue<UntypedSingleValue>(upState * 1.0);
+    e->SetTimestamp(scrapeTimestamp);
+
+    e = nullptr;
 }
 
 } // namespace logtail

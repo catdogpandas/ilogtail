@@ -111,16 +111,21 @@ void ScrapeWork::ScrapeLoop() {
 
 void ScrapeWork::ScrapeAndPush() {
     time_t defaultTs = time(nullptr);
+    uint64_t scrapeNanoSeconds = GetCurrentTimeInNanoSeconds();
 
     // scrape target by CurlClient
     auto httpResponse = Scrape();
-    if (httpResponse.statusCode == 200) {
-        auto parser = TextParser();
-        auto eventGroup
-            = parser.Parse(httpResponse.content, defaultTs, mScrapeConfigPtr->mJobName, mScrapeTarget.mHost);
 
-        PushEventGroup(std::move(eventGroup));
-    } else {
+    mScrapeDurationNanoSeconds = GetCurrentTimeInMilliSeconds() - scrapeNanoSeconds;
+    mScrapeResponseSizeBytes = httpResponse.content.size();
+    mUpState = httpResponse.statusCode == 200;
+
+    auto parser = TextParser();
+    auto eGroup = parser.Parse(httpResponse.content, defaultTs, mScrapeConfigPtr->mJobName, mScrapeTarget.mHost);
+
+    mSamplesScraped = eGroup.GetEvents().size();
+
+    if (httpResponse.statusCode != 200) {
         string headerStr;
         for (const auto& [k, v] : mScrapeConfigPtr->mHeaders) {
             headerStr.append(k).append(":").append(v).append(";");
@@ -128,6 +133,9 @@ void ScrapeWork::ScrapeAndPush() {
         LOG_WARNING(sLogger,
                     ("scrape failed, status code", httpResponse.statusCode)("target", mHash)("http header", headerStr));
     }
+
+    SetSelfMonitorMeta(eGroup, scrapeNanoSeconds);
+    PushEventGroup(std::move(eGroup));
 }
 
 uint64_t ScrapeWork::GetRandSleep() {
@@ -179,6 +187,15 @@ void ScrapeWork::PushEventGroup(PipelineEventGroup&& eGroup) {
         this_thread::sleep_for(chrono::milliseconds(10));
     }
     LOG_INFO(sLogger, ("push event group failed", mHash));
+}
+
+void ScrapeWork::SetSelfMonitorMeta(PipelineEventGroup& eGroup, uint64_t scrapeNanoSeconds) {
+    eGroup.SetMetadata(EventGroupMetaKey::PROMETHEUS_SCRAPE_TIMESTAMP, ToString(scrapeNanoSeconds));
+    eGroup.SetMetadata(EventGroupMetaKey::PROMETHEUS_SAMPLES_SCRAPED, ToString(mSamplesScraped));
+    eGroup.SetMetadata(EventGroupMetaKey::PROMETHEUS_SCRAPE_DURATION,
+                       ToString((double)1.0 * mScrapeDurationNanoSeconds));
+    eGroup.SetMetadata(EventGroupMetaKey::PROMETHEUS_SCRAPE_RESPONSE_SIZE, ToString(mScrapeResponseSizeBytes));
+    eGroup.SetMetadata(EventGroupMetaKey::PROMETHEUS_UP_STATE, ToString(mUpState));
 }
 
 void ScrapeWork::SetUnRegisterMs(uint64_t unRegisterMs) {

@@ -38,7 +38,14 @@ protected:
 private:
     bool ProcessEvent(PipelineEventPtr& e);
 
+    void AddSelfMonitorMetrics(PipelineEventGroup& metricGroup);
+
     std::vector<RelabelConfig> mRelabelConfigs;
+
+    // from config
+    int64_t mScrapeTimeoutSeconds;
+    int64_t mSampleLimit;
+    int64_t mSeriesLimit;
 
 #ifdef APSARA_UNIT_TEST_MAIN
     friend class ProcessorRelabelMetricNativeUnittest;
