@@ -53,8 +53,7 @@ string URLEncode(const string& value) {
     return escaped.str();
 }
 
-ScrapeJob::ScrapeJob() : mOperatorPort(0), mQueueKey(0), mInputIndex(0) {
-    mFinished.store(true);
+ScrapeJob::ScrapeJob() : mOperatorPort(0), mQueueKey(0), mInputIndex(0), mFinished(true) {
     mClient = make_unique<sdk::CurlClient>();
 }
 
