@@ -39,6 +39,7 @@ private:
     bool ProcessEvent(PipelineEventPtr& e, StringView currentInstance);
 
     void AddSelfMonitorMetrics(PipelineEventGroup& metricGroup);
+    void SetJobAndInstanceTag(MetricEvent& event, StringView instance);
 
     std::vector<RelabelConfig> mRelabelConfigs;
 

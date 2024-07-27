@@ -29,6 +29,7 @@ using namespace std;
 namespace logtail {
 
 const string ProcessorRelabelMetricNative::sName = "processor_relabel_metric_native";
+const static StringView sINSTANCE = StringView("instance");
 
 // only for inner processor
 bool ProcessorRelabelMetricNative::Init(const Json::Value& config) {
@@ -127,10 +128,7 @@ bool ProcessorRelabelMetricNative::ProcessEvent(PipelineEventPtr& e, StringView 
         if (!result.Get("__name__").empty()) {
             sourceEvent.SetName(result.Get("__name__"));
         }
-
-        // set job and instance tag
-        sourceEvent.SetTag(prometheus::JOB, mJobName);
-        sourceEvent.SetTag(prometheus::INSTANCE, currentInstance.to_string());
+        SetJobAndInstanceTag(sourceEvent, currentInstance);
 
         return true;
     }
@@ -160,46 +158,59 @@ void ProcessorRelabelMetricNative::AddSelfMonitorMetrics(PipelineEventGroup& met
     uint64_t upState = metricGroup.GetMetadata(EventGroupMetaKey::PROMETHEUS_UP_STATE).to_string() == "1" ? 1 : 0;
 
     MetricEvent* e = nullptr;
+    StringView instance = metricGroup.GetMetadata(EventGroupMetaKey::PROMETHEUS_INSTANCE);
 
     e = metricGroup.AddMetricEvent();
     e->SetName(prometheus::SCRAPE_DURATION_SECONDS);
     e->SetValue<UntypedSingleValue>(scrapeDurationSeconds);
     e->SetTimestamp(scrapeTimestamp);
+    SetJobAndInstanceTag(*e, instance);
 
     e = metricGroup.AddMetricEvent();
     e->SetName(prometheus::SCRAPE_RESPONSE_SIZE_BYTES);
     e->SetValue<UntypedSingleValue>(scrapeResponseSize * 1.0);
     e->SetTimestamp(scrapeTimestamp);
+    SetJobAndInstanceTag(*e, instance);
 
     if (mSampleLimit > 0) {
         e = metricGroup.AddMetricEvent();
         e->SetName(prometheus::SCRAPE_SAMPLES_LIMIT);
         e->SetValue<UntypedSingleValue>(mSampleLimit * 1.0);
         e->SetTimestamp(scrapeTimestamp);
+        SetJobAndInstanceTag(*e, instance);
     }
 
     e = metricGroup.AddMetricEvent();
     e->SetName(prometheus::SCRAPE_SAMPLES_POST_METRIC_RELABELING);
     e->SetValue<UntypedSingleValue>(samplesPostMetricRelabel * 1.0);
     e->SetTimestamp(scrapeTimestamp);
+    SetJobAndInstanceTag(*e, instance);
 
     e = metricGroup.AddMetricEvent();
     e->SetName(prometheus::SCRAPE_SAMPLES_SCRAPED);
     e->SetValue<UntypedSingleValue>(samplesScraped * 1.0);
     e->SetTimestamp(scrapeTimestamp);
+    SetJobAndInstanceTag(*e, instance);
 
     e = metricGroup.AddMetricEvent();
     e->SetName(prometheus::SCRAPE_TIMEOUT_SECONDS);
     e->SetValue<UntypedSingleValue>(mScrapeTimeoutSeconds * 1.0);
     e->SetTimestamp(scrapeTimestamp);
+    SetJobAndInstanceTag(*e, instance);
 
     // up metric must be the last one
     e = metricGroup.AddMetricEvent();
     e->SetName(prometheus::UP);
     e->SetValue<UntypedSingleValue>(upState * 1.0);
     e->SetTimestamp(scrapeTimestamp);
+    SetJobAndInstanceTag(*e, instance);
 
     e = nullptr;
+}
+
+void ProcessorRelabelMetricNative::SetJobAndInstanceTag(MetricEvent& event, StringView instance) {
+    event.SetTag(prometheus::JOB, mJobName);
+    event.SetTag(sINSTANCE, instance);
 }
 
 } // namespace logtail
