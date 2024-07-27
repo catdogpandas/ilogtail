@@ -32,10 +32,8 @@ public:
     PipelineEventGroup Parse(const std::string& content);
 
 
-    PipelineEventGroup Parse(const std::string& content,
-                             std::time_t defaultTs,
-                             const std::string& jobName,
-                             const std::string& instance);
+    PipelineEventGroup Parse(const std::string& content, std::time_t defaultTs);
+
 private:
     RE2 mSampleRegex;
 

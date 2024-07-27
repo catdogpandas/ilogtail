@@ -42,11 +42,10 @@ PipelineEventGroup TextParser::Parse(const string& content) {
     auto duration_since_epoch = now.time_since_epoch();
     auto seconds_since_epoch = std::chrono::duration_cast<std::chrono::seconds>(duration_since_epoch);
     std::time_t defaultTsInSecs = seconds_since_epoch.count();
-    return Parse(content, defaultTsInSecs, "", "");
+    return Parse(content, defaultTsInSecs);
 }
 
-PipelineEventGroup
-TextParser::Parse(const string& content, const time_t defaultTsInSecs, const string& jobName, const string& instance) {
+PipelineEventGroup TextParser::Parse(const string& content, const time_t defaultTsInSecs) {
     string line;
     string argName, argLabels, argUnwrappedLabels, argValue, argSuffix, argTimestamp;
     istringstream iss(content);
@@ -104,7 +103,7 @@ TextParser::Parse(const string& content, const time_t defaultTsInSecs, const str
 
         // set timestamp to `defaultTsInSecs` if timestamp is empty, otherwise parse it
         // if timestamp is not empty but not a valid integer, skip it
-        time_t timestamp;
+        time_t timestamp = 0;
         if (argTimestamp.empty()) {
             timestamp = defaultTsInSecs;
         } else {
@@ -135,12 +134,6 @@ TextParser::Parse(const string& content, const time_t defaultTsInSecs, const str
                     e->SetTag(key, value);
                 }
             }
-        }
-        if (!jobName.empty()) {
-            e->SetTag(string(prometheus::JOB), jobName);
-        }
-        if (!instance.empty()) {
-            e->SetTag(string(prometheus::INSTANCE), instance);
         }
     }
 

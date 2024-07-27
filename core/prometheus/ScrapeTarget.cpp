@@ -17,6 +17,7 @@ ScrapeTarget::ScrapeTarget(const Labels& labels) : mLabels(labels) {
         mHost = address.substr(0, m);
         mPort = stoi(address.substr(m + 1));
     }
+    mInstance = address;
 }
 
 string ScrapeTarget::GetHash() {

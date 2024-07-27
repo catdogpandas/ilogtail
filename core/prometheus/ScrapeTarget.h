@@ -20,6 +20,8 @@ public:
     std::string mHost;
     uint32_t mPort;
 
+    std::string mInstance;
+
     std::string GetHash();
 };
 } // namespace logtail

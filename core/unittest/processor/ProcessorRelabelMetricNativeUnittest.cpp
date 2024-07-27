@@ -31,6 +31,7 @@ public:
     void TestInit();
     void TestProcess();
     void TestAddSelfMonitorMetrics();
+    void TestAddJobAndInstance();
 
     PipelineContext mContext;
 };
@@ -45,6 +46,7 @@ void ProcessorRelabelMetricNativeUnittest::TestInit() {
     string errorMsg;
     configStr = R"JSON(
         {
+            "job_name": "test_job",
             "metric_relabel_configs": [
                 {
                     "action": "keep",
@@ -82,8 +84,9 @@ void ProcessorRelabelMetricNativeUnittest::TestProcess() {
 
     string configStr;
     string errorMsg;
-    configStr = configStr + R"(
+    configStr = configStr + R"JSON(
         {
+            "job_name": "test_job",
             "metric_relabel_configs": [
                 {
                     "action": "drop",
@@ -96,9 +99,7 @@ void ProcessorRelabelMetricNativeUnittest::TestProcess() {
                 },
                 {
                     "action": "replace",
-                    "regex": "(.*)"
-        + ")\",\n" +
-        R"(
+                    "regex": "(.*)",
                     "replacement": "${1}:9100",
                     "separator": ";",
                     "source_labels": [
@@ -108,7 +109,7 @@ void ProcessorRelabelMetricNativeUnittest::TestProcess() {
                 }
             ]
         }
-    )";
+    )JSON";
 
     // init
     APSARA_TEST_TRUE(ParseJsonTable(configStr, config, errorMsg));
@@ -159,6 +160,7 @@ void ProcessorRelabelMetricNativeUnittest::TestAddSelfMonitorMetrics() {
     string errorMsg;
     configStr = configStr + R"(
         {
+            "job_name": "test_job",
             "scrape_timeout": "15s",
             "sample_limit": 1000,
             "series_limit": 1000
@@ -210,9 +212,58 @@ test_metric8{k1="v1", k3="v2", } 9.9410452992e+10 1715829785083
     APSARA_TEST_EQUAL(1, eventGroup.GetEvents().at(14).Cast<MetricEvent>().GetValue<UntypedSingleValue>()->mValue);
 }
 
+void ProcessorRelabelMetricNativeUnittest::TestAddJobAndInstance() {
+    // make config
+    Json::Value config;
+
+    ProcessorRelabelMetricNative processor;
+    processor.SetContext(mContext);
+
+    string configStr;
+    string errorMsg;
+    configStr = configStr + R"(
+        {
+            "job_name": "test_job"
+        }
+    )";
+
+    // init
+    APSARA_TEST_TRUE(ParseJsonTable(configStr, config, errorMsg));
+    APSARA_TEST_TRUE(processor.Init(config));
+
+    // make events
+    auto parser = TextParser();
+    auto eventGroup = parser.Parse(R"""(
+# begin
+
+test_metric1{k1="v1", k2="v2"} 1.0
+  test_metric2{k1="v1", k2="v2"} 2.0 1234567890
+test_metric3{k1="v1",k2="v2"} 9.9410452992e+10
+  test_metric4{k1="v1",k2="v2"} 9.9410452992e+10 1715829785083
+  test_metric5{k1="v1", k2="v2" } 9.9410452992e+10 1715829785083
+test_metric6{k1="v1",k2="v2",} 9.9410452992e+10 1715829785083
+test_metric7{k1="v1",k3="2", } 9.9410452992e+10 1715829785083  
+test_metric8{k1="v1", k3="v2", } 9.9410452992e+10 1715829785083
+
+# end
+    )""");
+    eventGroup.SetMetadata(EventGroupMetaKey::PROMETHEUS_INSTANCE, StringView("test_instance"));
+
+    // run function
+    std::string pluginId = "testID";
+    APSARA_TEST_EQUAL((size_t)8, eventGroup.GetEvents().size());
+    processor.Process(eventGroup);
+
+    // judge result
+    APSARA_TEST_EQUAL((size_t)8, eventGroup.GetEvents().size());
+    APSARA_TEST_EQUAL("test_job", eventGroup.GetEvents().at(0).Cast<MetricEvent>().GetTag("job"));
+    APSARA_TEST_EQUAL("test_instance", eventGroup.GetEvents().at(0).Cast<MetricEvent>().GetTag("instance"));
+}
+
 UNIT_TEST_CASE(ProcessorRelabelMetricNativeUnittest, TestInit)
 UNIT_TEST_CASE(ProcessorRelabelMetricNativeUnittest, TestProcess)
 UNIT_TEST_CASE(ProcessorRelabelMetricNativeUnittest, TestAddSelfMonitorMetrics)
+UNIT_TEST_CASE(ProcessorRelabelMetricNativeUnittest, TestAddJobAndInstance)
 
 } // namespace logtail
 

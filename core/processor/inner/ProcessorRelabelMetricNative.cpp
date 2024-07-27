@@ -44,9 +44,13 @@ bool ProcessorRelabelMetricNative::Init(const Json::Value& config) {
                 return false;
             }
         }
-        return true;
     }
 
+    if (config.isMember(prometheus::JOB_NAME) && config[prometheus::JOB_NAME].isString()) {
+        mJobName = config[prometheus::JOB_NAME].asString();
+    } else {
+        return false;
+    }
     if (config.isMember(prometheus::SCRAPE_TIMEOUT) && config[prometheus::SCRAPE_TIMEOUT].isString()) {
         string tmpScrapeTimeoutString = config[prometheus::SCRAPE_TIMEOUT].asString();
         if (EndWith(tmpScrapeTimeoutString, "s")) {
@@ -74,11 +78,12 @@ void ProcessorRelabelMetricNative::Process(PipelineEventGroup& metricGroup) {
         return;
     }
 
+    StringView currentInstance = metricGroup.GetMetadata(EventGroupMetaKey::PROMETHEUS_INSTANCE);
     EventsContainer& events = metricGroup.MutableEvents();
 
     size_t wIdx = 0;
     for (size_t rIdx = 0; rIdx < events.size(); ++rIdx) {
-        if (ProcessEvent(events[rIdx])) {
+        if (ProcessEvent(events[rIdx], currentInstance)) {
             if (wIdx != rIdx) {
                 events[wIdx] = std::move(events[rIdx]);
             }
@@ -95,7 +100,7 @@ bool ProcessorRelabelMetricNative::IsSupportedEvent(const PipelineEventPtr& e) c
     return e.Is<MetricEvent>();
 }
 
-bool ProcessorRelabelMetricNative::ProcessEvent(PipelineEventPtr& e) {
+bool ProcessorRelabelMetricNative::ProcessEvent(PipelineEventPtr& e, StringView currentInstance) {
     if (!IsSupportedEvent(e)) {
         return false;
     }
@@ -122,6 +127,11 @@ bool ProcessorRelabelMetricNative::ProcessEvent(PipelineEventPtr& e) {
         if (!result.Get("__name__").empty()) {
             sourceEvent.SetName(result.Get("__name__"));
         }
+
+        // set job and instance tag
+        sourceEvent.SetTag(prometheus::JOB, mJobName);
+        sourceEvent.SetTag(prometheus::INSTANCE, currentInstance.to_string());
+
         return true;
     }
     return false;

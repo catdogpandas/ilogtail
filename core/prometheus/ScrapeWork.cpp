@@ -121,7 +121,7 @@ void ScrapeWork::ScrapeAndPush() {
     mUpState = httpResponse.statusCode == 200;
 
     auto parser = TextParser();
-    auto eGroup = parser.Parse(httpResponse.content, defaultTs, mScrapeConfigPtr->mJobName, mScrapeTarget.mHost);
+    auto eGroup = parser.Parse(httpResponse.content, defaultTs);
 
     mSamplesScraped = eGroup.GetEvents().size();
 
@@ -195,6 +195,7 @@ void ScrapeWork::SetSelfMonitorMeta(PipelineEventGroup& eGroup, uint64_t scrapeN
     eGroup.SetMetadata(EventGroupMetaKey::PROMETHEUS_SCRAPE_DURATION,
                        ToString((double)1.0 * mScrapeDurationNanoSeconds));
     eGroup.SetMetadata(EventGroupMetaKey::PROMETHEUS_SCRAPE_RESPONSE_SIZE, ToString(mScrapeResponseSizeBytes));
+    eGroup.SetMetadata(EventGroupMetaKey::PROMETHEUS_INSTANCE, mScrapeTarget.mInstance);
     eGroup.SetMetadata(EventGroupMetaKey::PROMETHEUS_UP_STATE, ToString(mUpState));
 }
 

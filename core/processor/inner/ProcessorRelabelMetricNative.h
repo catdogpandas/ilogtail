@@ -36,13 +36,14 @@ protected:
     bool IsSupportedEvent(const PipelineEventPtr& e) const override;
 
 private:
-    bool ProcessEvent(PipelineEventPtr& e);
+    bool ProcessEvent(PipelineEventPtr& e, StringView currentInstance);
 
     void AddSelfMonitorMetrics(PipelineEventGroup& metricGroup);
 
     std::vector<RelabelConfig> mRelabelConfigs;
 
     // from config
+    std::string mJobName;
     int64_t mScrapeTimeoutSeconds;
     int64_t mSampleLimit;
     int64_t mSeriesLimit;
