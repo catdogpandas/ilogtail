@@ -154,6 +154,8 @@ void ProcessorRelabelMetricNative::AddSelfMonitorMetrics(PipelineEventGroup& met
 
     auto samplesScraped
         = StringTo<uint64_t>(metricGroup.GetMetadata(EventGroupMetaKey::PROMETHEUS_SAMPLES_SCRAPED).to_string());
+    auto seriesAdded
+        = StringTo<uint64_t>(metricGroup.GetMetadata(EventGroupMetaKey::PROMETHEUS_SERIES_ADDED).to_string());
 
     uint64_t upState = metricGroup.GetMetadata(EventGroupMetaKey::PROMETHEUS_UP_STATE).to_string() == "1" ? 1 : 0;
 
@@ -189,6 +191,12 @@ void ProcessorRelabelMetricNative::AddSelfMonitorMetrics(PipelineEventGroup& met
     e = metricGroup.AddMetricEvent();
     e->SetName(prometheus::SCRAPE_SAMPLES_SCRAPED);
     e->SetValue<UntypedSingleValue>(samplesScraped * 1.0);
+    e->SetTimestamp(scrapeTimestamp);
+    SetJobAndInstanceTag(*e, instance);
+
+    e = metricGroup.AddMetricEvent();
+    e->SetName(prometheus::SCRAPE_SERIES_ADDED);
+    e->SetValue<UntypedSingleValue>(seriesAdded * 1.0);
     e->SetTimestamp(scrapeTimestamp);
     SetJobAndInstanceTag(*e, instance);
 

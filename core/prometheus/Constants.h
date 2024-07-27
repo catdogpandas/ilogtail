@@ -72,6 +72,7 @@ namespace logtail::prometheus {
     const char* const SCRAPE_RESPONSE_SIZE_BYTES = "scrape_response_size_bytes";
     const char* const SCRAPE_SAMPLES_LIMIT = "scrape_samples_limit";
     const char* const SCRAPE_SAMPLES_POST_METRIC_RELABELING = "scrape_samples_post_metric_relabeling";
+    const char* const SCRAPE_SERIES_ADDED = "scrape_series_added";
     const char* const SCRAPE_SAMPLES_SCRAPED = "scrape_samples_scraped";
     const char* const SCRAPE_TIMEOUT_SECONDS = "scrape_timeout_seconds";
     const char* const UP = "up";

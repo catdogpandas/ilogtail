@@ -95,6 +95,7 @@ class ScrapeWorkUnittest : public testing::Test {
 public:
     void OnStartAndStopScrapeLoop();
     void OnGetRandSleep();
+    void TestGetSeriesAdded();
 
 private:
 };
@@ -186,8 +187,129 @@ void ScrapeWorkUnittest::OnGetRandSleep() {
     APSARA_TEST_NOT_EQUAL(rand1, rand2);
 }
 
+void ScrapeWorkUnittest::TestGetSeriesAdded() {
+    Json::Value config;
+    string errorMsg;
+    string content;
+    string configStr = R"JSON(
+    {
+        "job_name": "test_job",
+        "scheme": "http",
+        "metrics_path": "/metrics",
+        "scrape_interval": "30s",
+        "scrape_timeout": "30s"
+    }
+    )JSON";
+    auto scrapeConfigPtr = std::make_shared<ScrapeConfig>();
+    APSARA_TEST_TRUE(ParseJsonTable(configStr, config, errorMsg));
+    APSARA_TEST_TRUE(scrapeConfigPtr->Init(config));
+
+    auto labels = Labels();
+    labels.Push(Label{"test_label", "test_value"});
+    labels.Push(Label{"__address__", "192.168.0.1:1234"});
+    labels.Push(Label{"job", "test_job"});
+
+    auto target = ScrapeTarget(labels);
+
+    ScrapeWork work(scrapeConfigPtr, target, 0, 0);
+
+    work.mLastScrape = "# HELP go_gc_duration_seconds A summary of the pause duration of garbage collection cycles.\n"
+                       "# TYPE go_gc_duration_seconds summary\n"
+                       "go_gc_duration_seconds{quantile=\"0\"} 1.5531e-05\n"
+                       "go_gc_duration_seconds{quantile=\"0.25\"} 3.9357e-05\n"
+                       "go_gc_duration_seconds{quantile=\"0.5\"} 4.1114e-05\n"
+                       "go_gc_duration_seconds{quantile=\"0.75\"} 4.3372e-05\n"
+                       "go_gc_duration_seconds{quantile=\"1\"} 0.000112326\n"
+                       "go_gc_duration_seconds_sum 0.034885631\n"
+                       "go_gc_duration_seconds_count 850\n"
+                       "# HELP go_goroutines Number of goroutines that currently exist.\n"
+                       "# TYPE go_goroutines gauge\n"
+                       "go_goroutines 7\n"
+                       "# HELP go_info Information about the Go environment.\n"
+                       "# TYPE go_info gauge\n"
+                       "go_info{version=\"go1.22.3\"} 1\n"
+                       "# HELP go_memstats_alloc_bytes Number of bytes allocated and still in use.\n"
+                       "# TYPE go_memstats_alloc_bytes gauge\n"
+                       "go_memstats_alloc_bytes 6.742688e+06\n"
+                       "# HELP go_memstats_alloc_bytes_total Total number of bytes allocated, even if freed.\n"
+                       "# TYPE go_memstats_alloc_bytes_total counter\n"
+                       "go_memstats_alloc_bytes_total 1.5159292e+08";
+
+    // not changed
+    content = "# HELP go_gc_duration_seconds A summary of the pause duration of garbage collection cycles.\n"
+              "# TYPE go_gc_duration_seconds summary\n"
+              "go_gc_duration_seconds{quantile=\"0\"} 1.5531e-05\n"
+              "go_gc_duration_seconds{quantile=\"0.25\"} 3.957e-05\n"
+              "go_gc_duration_seconds{quantile=\"0.5\"} 4.1114e-05\n"
+              "go_gc_duration_seconds{quantile=\"0.75\"} 4.3372e-05\n"
+              "go_gc_duration_seconds{quantile=\"1\"} 0.002326\n"
+              "go_gc_duration_seconds_sum 0.034885631\n"
+              "go_gc_duration_seconds_count 850\n"
+              "# HELP go_goroutines Number of goroutines that currently exist.\n"
+              "# TYPE go_goroutines gauge\n"
+              "go_goroutines 7\n"
+              "# HELP go_info Information about the Go environment.\n"
+              "# TYPE go_info gauge\n"
+              "go_info{version=\"go1.22.3\"} 1\n"
+              "# HELP go_memstats_alloc_bytes Number of bytes allocated and still in use.\n"
+              "# TYPE go_memstats_alloc_bytes gauge\n"
+              "go_memstats_alloc_bytes 6.742688e+06\n"
+              "# HELP go_memstats_alloc_bytes_total Total number of bytes allocated, even if freed.\n"
+              "# TYPE go_memstats_alloc_bytes_total counter\n"
+              "go_memstats_alloc_bytes_total 1.89+08";
+    APSARA_TEST_EQUAL(0, work.GetSeriesAdded(content));
+
+    // miss some series
+    content = "# HELP go_gc_duration_seconds A summary of the pause duration of garbage collection cycles.\n"
+              "# TYPE go_gc_duration_seconds summary\n"
+              "go_gc_duration_seconds{quantile=\"0\"} 1.5531e-05\n"
+              "go_gc_duration_seconds{quantile=\"0.25\"} 3.957e-05\n"
+              "go_gc_duration_seconds{quantile=\"0.5\"} 4.1114e-05\n"
+              "# HELP go_memstats_alloc_bytes_total Total number of bytes allocated, even if freed.\n"
+              "# TYPE go_memstats_alloc_bytes_total counter\n"
+              "go_memstats_alloc_bytes_total 1.89+08";
+    APSARA_TEST_EQUAL(0, work.GetSeriesAdded(content));
+
+    // add some series
+
+    content = R"(
+# HELP go_memstats_heap_alloc_bytes Number of heap bytes allocated and still in use.
+# TYPE go_memstats_heap_alloc_bytes gauge
+go_memstats_heap_alloc_bytes 2.152028e+07
+# HELP go_memstats_heap_idle_bytes Number of heap bytes waiting to be used.
+# TYPE go_memstats_heap_idle_bytes gauge
+go_memstats_heap_idle_bytes 5.2944896e+07
+# HELP go_memstats_heap_inuse_bytes Number of heap bytes that are in use.
+# TYPE go_memstats_heap_inuse_bytes gauge
+go_memstats_heap_inuse_bytes 2.527232e+07
+# HELP go_memstats_heap_objects Number of allocated objects.
+# TYPE go_memstats_heap_objects gauge
+go_memstats_heap_objects 91110
+# HELP go_memstats_heap_released_bytes Number of heap bytes released to OS.
+# TYPE go_memstats_heap_released_bytes gauge
+go_memstats_heap_released_bytes 4.8594944e+07
+# HELP go_memstats_heap_sys_bytes Number of heap bytes obtained from system.
+# TYPE go_memstats_heap_sys_bytes gauge
+go_memstats_heap_sys_bytes 7.8217216e+07
+# HELP go_memstats_last_gc_time_seconds Number of seconds since 1970 of last garbage collection.
+# TYPE go_memstats_last_gc_time_seconds gauge
+go_memstats_last_gc_time_seconds 1.7220980311346083e+09
+# HELP go_memstats_lookups_total Total number of pointer lookups.
+# TYPE go_memstats_lookups_total counter
+go_memstats_lookups_total 0
+# HELP go_memstats_mallocs_total Total number of mallocs.
+# TYPE go_memstats_mallocs_total counter
+go_memstats_mallocs_total 4.5834002e+07
+# HELP go_memstats_mcache_inuse_bytes Number of bytes in use by mcache structures.
+# TYPE go_memstats_mcache_inuse_bytes gauge
+go_memstats_mcache_inuse_bytes 9600
+    )";
+    APSARA_TEST_EQUAL(10, work.GetSeriesAdded(content));
+}
+
 UNIT_TEST_CASE(ScrapeWorkUnittest, OnStartAndStopScrapeLoop)
 UNIT_TEST_CASE(ScrapeWorkUnittest, OnGetRandSleep)
+UNIT_TEST_CASE(ScrapeWorkUnittest, TestGetSeriesAdded)
 
 } // namespace logtail
 

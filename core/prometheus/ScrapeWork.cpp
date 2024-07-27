@@ -134,8 +134,42 @@ void ScrapeWork::ScrapeAndPush() {
                     ("scrape failed, status code", httpResponse.statusCode)("target", mHash)("http header", headerStr));
     }
 
+    mSeriesAdded = GetSeriesAdded(httpResponse.content);
+
     SetSelfMonitorMeta(eGroup, scrapeNanoSeconds);
     PushEventGroup(std::move(eGroup));
+
+    StoreLastScrape(std::move(httpResponse.content));
+}
+
+uint64_t ScrapeWork::GetSeriesAdded(const string& content) {
+    // a simple implementation
+    uint64_t seriesAdded = 0;
+    vector<string> lastScrape = StringSpliter(mLastScrape, "\n");
+    vector<string> currentScrape = StringSpliter(content, "\n");
+    set<string> lastScrapeSet;
+    set<string> currentScrapeSet;
+    for (auto& line : lastScrape) {
+        lastScrapeSet.insert(line.substr(0, line.find_last_of(" ")));
+    }
+    for (auto& line : currentScrape) {
+        currentScrapeSet.insert(line.substr(0, line.find_last_of(" ")));
+    }
+
+    // compare without timestamp and value
+    for (const auto& line : currentScrapeSet) {
+        if (TrimString(line).empty() || StartWith(line, "#")) {
+            continue;
+        }
+        if (lastScrapeSet.find(line) == lastScrapeSet.end()) {
+            seriesAdded++;
+        }
+    }
+    return seriesAdded;
+}
+
+void ScrapeWork::StoreLastScrape(string&& content) {
+    mLastScrape = std::move(content);
 }
 
 uint64_t ScrapeWork::GetRandSleep() {
@@ -195,6 +229,7 @@ void ScrapeWork::SetSelfMonitorMeta(PipelineEventGroup& eGroup, uint64_t scrapeN
     eGroup.SetMetadata(EventGroupMetaKey::PROMETHEUS_SCRAPE_DURATION,
                        ToString((double)1.0 * mScrapeDurationNanoSeconds));
     eGroup.SetMetadata(EventGroupMetaKey::PROMETHEUS_SCRAPE_RESPONSE_SIZE, ToString(mScrapeResponseSizeBytes));
+    eGroup.SetMetadata(EventGroupMetaKey::PROMETHEUS_SERIES_ADDED, ToString(mSeriesAdded));
     eGroup.SetMetadata(EventGroupMetaKey::PROMETHEUS_INSTANCE, mScrapeTarget.mInstance);
     eGroup.SetMetadata(EventGroupMetaKey::PROMETHEUS_UP_STATE, ToString(mUpState));
 }

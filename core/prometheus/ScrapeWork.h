@@ -57,11 +57,12 @@ private:
     sdk::HttpMessage Scrape();
     void PushEventGroup(PipelineEventGroup&&);
 
+    uint64_t GetSeriesAdded(const std::string& content);
+    void StoreLastScrape(std::string&& content);
     void SetSelfMonitorMeta(PipelineEventGroup&, uint64_t);
 
     std::shared_ptr<ScrapeConfig> mScrapeConfigPtr;
     ScrapeTarget mScrapeTarget;
-
     std::string mHash;
 
     QueueKey mQueueKey;
@@ -79,6 +80,8 @@ private:
     uint64_t mScrapeResponseSizeBytes;
     uint64_t mSamplesScraped;
     uint64_t mUpState;
+    uint64_t mSeriesAdded;
+    std::string mLastScrape;
 
 #ifdef APSARA_UNIT_TEST_MAIN
     friend class ScrapeWorkUnittest;
