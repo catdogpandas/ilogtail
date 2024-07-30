@@ -33,7 +33,6 @@ const static StringView sINSTANCE = StringView("instance");
 
 // only for inner processor
 bool ProcessorRelabelMetricNative::Init(const Json::Value& config) {
-    LOG_INFO(sLogger, ("processor init", config.toStyledString()));
     std::string errorMsg;
     if (config.isMember(prometheus::METRIC_RELABEL_CONFIGS) && config[prometheus::METRIC_RELABEL_CONFIGS].isArray()
         && config[prometheus::METRIC_RELABEL_CONFIGS].size() > 0) {
@@ -125,8 +124,8 @@ bool ProcessorRelabelMetricNative::ProcessEvent(PipelineEventPtr& e, StringView 
         result.Range([&sourceEvent](const Label& label) { sourceEvent.SetTag(label.name, label.value); });
 
         // set metricEvent name
-        if (!result.Get("__name__").empty()) {
-            sourceEvent.SetName(result.Get("__name__"));
+        if (!result.Get(prometheus::NAME).empty()) {
+            sourceEvent.SetName(result.Get(prometheus::NAME));
         }
         SetJobAndInstanceTag(sourceEvent, currentInstance);
 

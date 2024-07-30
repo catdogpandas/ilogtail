@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "Scraper.h"
+#include "prometheus/ScraperGroup.h"
 
 #include <atomic>
 #include <memory>
@@ -33,6 +33,10 @@ using namespace std;
 namespace logtail {
 
 ScraperGroup::ScraperGroup() : mUnRegisterMs(0), mFinished(true), mScraperThread(nullptr) {
+}
+
+ScraperGroup::~ScraperGroup() {
+    Stop();
 }
 
 void ScraperGroup::UpdateScrapeWork(const string& jobName) {

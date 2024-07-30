@@ -21,7 +21,9 @@
 #include <string>
 #include <unordered_map>
 
+#include "Lock.h"
 #include "prometheus/ScrapeJob.h"
+#include "prometheus/ScraperGroup.h"
 #include "sdk/Common.h"
 
 namespace logtail {
@@ -50,6 +52,10 @@ private:
     PrometheusInputRunner();
     ~PrometheusInputRunner() = default;
 
+    // 发送Get网络请求
+    sdk::HttpMessage SendGetRequest(const std::string& url);
+
+    mutable ReadWriteLock mReadWriteLock;
     std::unordered_map<std::string, std::string> mPrometheusInputsMap;
 
     std::unique_ptr<sdk::HTTPClient> mClient;
@@ -57,6 +63,8 @@ private:
     std::string mOperatorHost;
     int32_t mOperatorPort;
     std::string mPodName;
+
+    std::unique_ptr<ScraperGroup> mScraperGroup;
 
 #ifdef APSARA_UNIT_TEST_MAIN
     friend class PrometheusInputRunnerUnittest;

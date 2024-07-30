@@ -64,12 +64,7 @@ bool ScrapeJob::Init(const Json::Value& scrapeConfig) {
     }
     mJobName = mScrapeConfigPtr->mJobName;
 
-    return Validation();
-}
-
-
-bool ScrapeJob::Validation() const {
-    return !mJobName.empty();
+    return true;
 }
 
 bool ScrapeJob::operator<(const ScrapeJob& other) const {
@@ -86,6 +81,8 @@ void ScrapeJob::StartTargetsDiscoverLoop() {
 void ScrapeJob::StopTargetsDiscoverLoop() {
     mFinished.store(true);
     mTargetsDiscoveryLoopThread.reset();
+
+    std::lock_guard<std::mutex> lock(mMutex);
     mScrapeTargetsMap.clear();
 }
 
@@ -128,7 +125,7 @@ bool ScrapeJob::FetchHttpData(string& readBuffer) const {
     map<string, string> httpHeader;
     httpHeader[prometheus::ACCEPT] = prometheus::APPLICATION_JSON;
     httpHeader[prometheus::X_PROMETHEUS_REFRESH_INTERVAL_SECONDS] = ToString(prometheus::RefeshIntervalSeconds);
-    httpHeader[prometheus::USER_AGENT] = prometheus::MATRIX_PROMETHEUS_PREFIX + mPodName;
+    httpHeader[prometheus::USER_AGENT] = prometheus::PROMETHEUS_PREFIX + mPodName;
     sdk::HttpMessage httpResponse;
     httpResponse.header[sdk::X_LOG_REQUEST_ID] = "PrometheusTargetsDiscover";
 
@@ -223,7 +220,6 @@ bool ScrapeJob::ParseTargetGroups(const string& response,
         if (result.Size() == 0) {
             continue;
         }
-        LOG_INFO(sLogger, ("target relabel keep", mJobName));
 
         auto scrapeTarget = ScrapeTarget(result);
 

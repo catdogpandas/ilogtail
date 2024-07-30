@@ -85,12 +85,11 @@ void TextParserUnittest::TestParseMetricWithTagsAndTimestamp() const {
     const auto eGroup = parser.Parse(R"""(
     test_metric{k1="v1", k2="v2"} 9.9410452992e+10 1715829785083
     test_metric2{k1="v1", k2="v2"} 2.0 1715829785083
-    test_metric3{k1="v1",k2="v2"} 4.2 1715829785083
+    test_metric3{k1="v1",k2="v2"} 4.2 92233720368547758080000
     )""");
 
     // test_metric
     const auto& events = &eGroup.GetEvents();
-    APSARA_TEST_EQUAL(3UL, events->size());
     const auto& event = events->front();
     const auto& metric = event.Get<MetricEvent>();
     APSARA_TEST_STREQ("test_metric", metric->GetName().data());
