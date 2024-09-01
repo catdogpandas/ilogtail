@@ -16,16 +16,19 @@
 
 #include "PrometheusInputRunner.h"
 
+#include <chrono>
 #include <memory>
 #include <string>
 
 #include "common/Flags.h"
 #include "common/JsonUtil.h"
 #include "common/StringTools.h"
+#include "common/TimeUtil.h"
 #include "common/http/AsynCurlRunner.h"
 #include "common/timer/Timer.h"
 #include "logger/Logger.h"
 #include "prometheus/Constants.h"
+#include "prometheus/Utils.h"
 #include "sdk/Common.h"
 #include "sdk/Exception.h"
 
@@ -56,10 +59,9 @@ void PrometheusInputRunner::UpdateScrapeInput(std::shared_ptr<TargetSubscriberSc
 
     targetSubscriber->mUnRegisterMs = mUnRegisterMs.load();
     targetSubscriber->SetTimer(mTimer);
-    auto firstExecTime
-        = std::chrono::steady_clock::now() + std::chrono::milliseconds(targetSubscriber->GetRandSleepMilliSec());
-    LOG_WARNING(sLogger, ("subscribe first time", ToString(firstExecTime.time_since_epoch().count())));
-
+    auto randSleepMilliSec = GetRandSleepMilliSec(
+        targetSubscriber->GetId(), prometheus::RefeshIntervalSeconds, GetCurrentTimeInMilliSeconds());
+    auto firstExecTime = std::chrono::steady_clock::now() + std::chrono::milliseconds(randSleepMilliSec);
     targetSubscriber->SetFirstExecTime(firstExecTime);
     // 1. add subscriber to mTargetSubscriberSchedulerMap
     {
@@ -106,7 +108,7 @@ void PrometheusInputRunner::Init() {
                     }
                 } else {
                     // register success
-                    // response will be { "unregister_ms": 30000 }
+                    // response will be { "unRegisterMs": 30000 }
                     if (!httpResponse.content.empty()) {
                         string responseStr = httpResponse.content;
                         string errMsg;
@@ -115,8 +117,14 @@ void PrometheusInputRunner::Init() {
                             LOG_ERROR(sLogger, ("register failed, parse response failed", responseStr));
                         }
                         if (responseJson.isMember(prometheus::UNREGISTER_MS)
-                            && responseJson[prometheus::UNREGISTER_MS].isUInt64()) {
-                            mUnRegisterMs.store(responseJson[prometheus::UNREGISTER_MS].asUInt64());
+                            && responseJson[prometheus::UNREGISTER_MS].isString()) {
+                            auto tmpStr = responseJson[prometheus::UNREGISTER_MS].asString();
+                            if (tmpStr.empty()) {
+                                mUnRegisterMs = 0;
+                            } else {
+                                mUnRegisterMs.store(StringTo<uint64_t>(tmpStr));
+                                LOG_INFO(sLogger, ("unRegisterMs", ToString(mUnRegisterMs)));
+                            }
                         }
                     }
                     LOG_INFO(sLogger, ("Register Success", mPodName));
@@ -214,7 +222,6 @@ void PrometheusInputRunner::CancelAllTargetSubscriber() {
 void PrometheusInputRunner::SubscribeOnce() {
     ReadLock lock(mSubscriberMapRWLock);
     for (auto& [k, v] : mTargetSubscriberSchedulerMap) {
-        LOG_WARNING(sLogger, ("subscribe once", k));
         v->SubscribeOnce(std::chrono::steady_clock::now());
     }
 }
