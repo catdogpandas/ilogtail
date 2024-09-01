@@ -56,7 +56,11 @@ void PrometheusInputRunner::UpdateScrapeInput(std::shared_ptr<TargetSubscriberSc
 
     targetSubscriber->mUnRegisterMs = mUnRegisterMs.load();
     targetSubscriber->SetTimer(mTimer);
-    targetSubscriber->SetFirstExecTime(std::chrono::steady_clock::now());
+    auto firstExecTime
+        = std::chrono::steady_clock::now() + std::chrono::milliseconds(targetSubscriber->GetRandSleepMilliSec());
+    LOG_WARNING(sLogger, ("subscribe first time", ToString(firstExecTime.time_since_epoch().count())));
+
+    targetSubscriber->SetFirstExecTime(firstExecTime);
     // 1. add subscriber to mTargetSubscriberSchedulerMap
     {
         WriteLock lock(mSubscriberMapRWLock);
@@ -116,6 +120,8 @@ void PrometheusInputRunner::Init() {
                         }
                     }
                     LOG_INFO(sLogger, ("Register Success", mPodName));
+                    // subscribe immediately
+                    SubscribeOnce();
                     break;
                 }
                 std::this_thread::sleep_for(std::chrono::seconds(1));
@@ -204,4 +210,13 @@ void PrometheusInputRunner::CancelAllTargetSubscriber() {
         it.second->Cancel();
     }
 }
+
+void PrometheusInputRunner::SubscribeOnce() {
+    ReadLock lock(mSubscriberMapRWLock);
+    for (auto& [k, v] : mTargetSubscriberSchedulerMap) {
+        LOG_WARNING(sLogger, ("subscribe once", k));
+        v->SubscribeOnce(std::chrono::steady_clock::now());
+    }
+}
+
 }; // namespace logtail
