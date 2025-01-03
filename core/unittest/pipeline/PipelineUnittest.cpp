@@ -12,12 +12,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include <json/json.h>
-
 #include <future>
 #include <memory>
 #include <string>
 #include <thread>
+
+#include "json/json.h"
 
 #include "app_config/AppConfig.h"
 #include "common/JsonUtil.h"
@@ -124,7 +124,7 @@ void PipelineUnittest::OnSuccessfulInit() const {
     APSARA_TEST_EQUAL(QueueKeyManager::GetInstance()->GetKey("test_config-flusher_sls-test_project#test_logstore"),
                       pipeline->GetContext().GetLogstoreKey());
     APSARA_TEST_EQUAL(0, pipeline->mInProcessCnt.load());
-    APSARA_TEST_EQUAL(2U, pipeline->mMetricsRecordRef->GetLabels()->size());
+    APSARA_TEST_EQUAL(3U, pipeline->mMetricsRecordRef->GetLabels()->size());
     APSARA_TEST_TRUE(pipeline->mMetricsRecordRef.HasLabel(METRIC_LABEL_KEY_PIPELINE_NAME, configName));
     APSARA_TEST_TRUE(pipeline->mMetricsRecordRef.HasLabel(METRIC_LABEL_KEY_PROJECT, "test_project"));
 

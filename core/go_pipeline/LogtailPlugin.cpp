@@ -14,7 +14,7 @@
 
 #include "go_pipeline/LogtailPlugin.h"
 
-#include <json/json.h>
+#include "json/json.h"
 
 #include "app_config/AppConfig.h"
 #include "common/DynamicLibHelper.h"
@@ -67,11 +67,13 @@ LogtailPlugin::LogtailPlugin() {
 
     mPluginCfg["LoongcollectorConfDir"] = AppConfig::GetInstance()->GetLoongcollectorConfDir();
     mPluginCfg["LoongcollectorLogDir"] = GetAgentLogDir();
-    mPluginCfg["LoongcollectorDataDir"] = GetAgentDataDir();
+    mPluginCfg["LoongcollectorDataDir"] = GetAgentGoCheckpointDir();
+    mPluginCfg["LoongcollectorLogConfDir"] = GetAgentGoLogConfDir();
     mPluginCfg["LoongcollectorPluginLogName"] = GetPluginLogName();
     mPluginCfg["LoongcollectorVersionTag"] = GetVersionTag();
     mPluginCfg["LoongcollectorCheckPointFile"] = GetGoPluginCheckpoint();
     mPluginCfg["LoongcollectorThirdPartyDir"] = GetAgentThirdPartyDir();
+    mPluginCfg["LoongcollectorPrometheusAuthorizationPath"] = GetAgentPrometheusAuthorizationPath();
     mPluginCfg["HostIP"] = LoongCollectorMonitor::mIpAddr;
     mPluginCfg["Hostname"] = LoongCollectorMonitor::mHostname;
     mPluginCfg["EnableContainerdUpperDirDetect"] = BOOL_FLAG(enable_containerd_upper_dir_detect);

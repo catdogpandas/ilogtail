@@ -16,15 +16,15 @@
 
 #pragma once
 
-#include <atomic>
 #include <cstdint>
+
+#include <atomic>
 #include <future>
 
 #include "monitor/MetricManager.h"
 #include "pipeline/plugin/interface/Flusher.h"
 #include "pipeline/queue/SenderQueueItem.h"
 #include "runner/sink/SinkType.h"
-#include "runner/sink/http/HttpSink.h"
 
 namespace logtail {
 
