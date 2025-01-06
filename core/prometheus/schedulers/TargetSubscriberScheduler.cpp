@@ -298,7 +298,6 @@ TargetSubscriberScheduler::BuildSubscriberTimerEvent(std::chrono::steady_clock::
         httpHeader[prometheus::IF_NONE_MATCH] = mETag;
     }
     auto body = TargetsInfoToString();
-    LOG_INFO(sLogger, ("body", body));
     auto request = std::make_unique<PromHttpRequest>(HTTP_GET,
                                                      false,
                                                      mServiceHost,
