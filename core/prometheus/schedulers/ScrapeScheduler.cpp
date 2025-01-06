@@ -49,7 +49,8 @@ ScrapeScheduler::ScrapeScheduler(std::shared_ptr<ScrapeConfig> scrapeConfigPtr,
       mScrapeConfigPtr(std::move(scrapeConfigPtr)),
       mHost(std::move(host)),
       mPort(port),
-      mQueueKey(queueKey) {
+      mQueueKey(queueKey),
+      mScrapeSamplesScraped(0) {
     string tmpTargetURL = mScrapeConfigPtr->mScheme + "://" + mHost + ":" + ToString(mPort)
         + mScrapeConfigPtr->mMetricsPath
         + (mScrapeConfigPtr->mQueryString.empty() ? "" : "?" + mScrapeConfigPtr->mQueryString);
@@ -83,20 +84,19 @@ void ScrapeScheduler::OnMetricResult(HttpResponse& response, uint64_t) {
         scrapeState = prom::NetworkCodeToState(NetworkCode::Ok);
     }
 
-    mScrapeDurationSeconds = scrapeDurationMilliSeconds * sRate;
-    mUpState = response.GetStatusCode() == 200;
     if (response.GetStatusCode() != 200) {
         LOG_WARNING(sLogger,
                     ("scrape failed, status code",
                      response.GetStatusCode())("target", mHash)("curl msg", response.GetNetworkStatus().mMessage));
     }
 
-    auto mScrapeDurationSeconds = scrapeDurationMilliSeconds * sRate;
-    auto mUpState = response.GetStatusCode() == 200;
+    auto scrapeDurationSeconds = scrapeDurationMilliSeconds * sRate;
+    auto upState = response.GetStatusCode() == 200;
     mPromStreamScraper.mStreamIndex++;
     mPromStreamScraper.FlushCache();
-    mPromStreamScraper.SetAutoMetricMeta(mScrapeDurationSeconds, mUpState, scrapeState);
+    mPromStreamScraper.SetAutoMetricMeta(scrapeDurationSeconds, upState, scrapeState);
     mPromStreamScraper.SendMetrics();
+    mScrapeSamplesScraped = mPromStreamScraper.mScrapeSamplesScraped;
     mPromStreamScraper.Reset();
 
     mPluginTotalDelayMs->Add(scrapeDurationMilliSeconds);

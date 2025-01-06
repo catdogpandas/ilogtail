@@ -117,4 +117,13 @@ const char* const ACCEPT_ENCODING = "Accept-Encoding";
 const char* const GZIP = "gzip";
 const char* const IDENTITY = "identity";
 
+const char* const AGENT_INFO = "AgentInfo";
+const char* const TARGETS_INFO = "TargetsInfo";
+const char* const CPU_LIMIT = "CpuLimit";
+const char* const CPU_USAGE = "CpuUsage";
+const char* const MEM_LIMIT = "MemLimit";
+const char* const MEM_USAGE = "MemUsage";
+const char* const HASH = "Hash";
+const char* const SERIES = "Series";
+
 } // namespace logtail::prometheus

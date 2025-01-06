@@ -93,6 +93,8 @@ public:
     // GetRealtimeCpuLevel return a value to indicates current CPU usage level.
     // LogInput use it to do flow control.
     float GetRealtimeCpuLevel() { return mRealtimeCpuStat.mCpuUsage / mScaledCpuUsageUpLimit; }
+    [[nodiscard]] float GetCpuUsage() const { return mCpuUsage.load(); }
+    [[nodiscard]] float GetMemoryUsage() const { return mMemoryUsage.load(); }
 
 private:
     LogtailMonitor();
@@ -161,6 +163,9 @@ private:
     CpuStat mCpuStat;
     // Memory usage statistics.
     MemStat mMemStat;
+
+    std::atomic<float> mCpuUsage = 0;
+    std::atomic<float> mMemoryUsage = 0;
 
     // Current scale up level, updated by CheckScaledCpuUsageUpLimit.
     float mScaledCpuUsageUpLimit;

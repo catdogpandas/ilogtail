@@ -14,13 +14,14 @@
  * limitations under the License.
  */
 
+#include <json/json.h>
+
 #include <iostream>
 #include <memory>
 #include <string>
 
-#include "json/json.h"
-
 #include "common/JsonUtil.h"
+#include "prometheus/Constants.h"
 #include "prometheus/labels/Labels.h"
 #include "prometheus/schedulers/TargetSubscriberScheduler.h"
 #include "unittest/Unittest.h"
@@ -35,6 +36,7 @@ public:
     void TestProcess();
     void TestParseTargetGroups();
     void TestBuildScrapeSchedulerSet();
+    void TestTargetsInfoToString();
 
 protected:
     void SetUp() override {
@@ -215,10 +217,30 @@ void TargetSubscriberSchedulerUnittest::TestBuildScrapeSchedulerSet() {
     APSARA_TEST_NOT_EQUAL(startTimeList[0].second, startTimeList[2].second);
 }
 
+void TargetSubscriberSchedulerUnittest::TestTargetsInfoToString() {
+    std::shared_ptr<TargetSubscriberScheduler> targetSubscriber = std::make_shared<TargetSubscriberScheduler>();
+    auto metricLabels = MetricLabels();
+    APSARA_TEST_TRUE(targetSubscriber->Init(mConfig["ScrapeConfig"]));
+    targetSubscriber->InitSelfMonitor(metricLabels);
+
+    // if status code is 200
+    mHttpResponse.SetStatusCode(200);
+    targetSubscriber->OnSubscription(mHttpResponse, 0);
+    APSARA_TEST_EQUAL(3UL, targetSubscriber->mScrapeSchedulerMap.size());
+
+    auto res = targetSubscriber->TargetsInfoToString();
+    string errorMsg;
+    Json::Value data;
+    ParseJsonTable(res, data, errorMsg);
+    APSARA_TEST_EQUAL(2.0, data[prometheus::AGENT_INFO][prometheus::CPU_LIMIT].asFloat());
+    APSARA_TEST_EQUAL((uint64_t)3, data[prometheus::TARGETS_INFO].size());
+}
+
 UNIT_TEST_CASE(TargetSubscriberSchedulerUnittest, OnInitScrapeJobEvent)
 UNIT_TEST_CASE(TargetSubscriberSchedulerUnittest, TestProcess)
 UNIT_TEST_CASE(TargetSubscriberSchedulerUnittest, TestParseTargetGroups)
 UNIT_TEST_CASE(TargetSubscriberSchedulerUnittest, TestBuildScrapeSchedulerSet)
+UNIT_TEST_CASE(TargetSubscriberSchedulerUnittest, TestTargetsInfoToString)
 
 } // namespace logtail
 

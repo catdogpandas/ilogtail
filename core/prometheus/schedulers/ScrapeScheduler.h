@@ -49,6 +49,7 @@ public:
     std::string GetId() const;
 
     void SetComponent(std::shared_ptr<Timer> timer, EventPool* eventPool);
+    uint64_t GetLastScrapeTimeSeries() const { return mScrapeSamplesScraped; }
 
     void ScheduleNext() override;
     void ScrapeOnce(std::chrono::steady_clock::time_point execTime);
@@ -70,10 +71,7 @@ private:
     QueueKey mQueueKey;
 
     // auto metrics
-    uint64_t mScrapeTimestampMilliSec = 0;
-    double mScrapeDurationSeconds = 0;
-    uint64_t mScrapeResponseSizeBytes = 0;
-    bool mUpState = true;
+    std::atomic_uint64_t mScrapeSamplesScraped;
 
     // self monitor
     std::shared_ptr<PromSelfMonitorUnsafe> mSelfMonitor;

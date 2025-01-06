@@ -30,6 +30,13 @@
 
 namespace logtail {
 
+struct PromAgentInfo {
+    float mCpuUsage;
+    float mMemUsage;
+    float mCpuLimit;
+    float mMemLimit;
+};
+
 class PrometheusInputRunner : public InputRunner {
 public:
     PrometheusInputRunner(const PrometheusInputRunner&) = delete;
@@ -42,6 +49,7 @@ public:
         return &sInstance;
     }
     void CheckGC();
+    PromAgentInfo GetAgentInfo();
 
     // input plugin update
     void UpdateScrapeInput(std::shared_ptr<TargetSubscriberScheduler> targetSubscriber,
@@ -73,6 +81,10 @@ private:
     std::string mServiceHost;
     int32_t mServicePort;
     std::string mPodName;
+
+    std::mutex mAgentInfoMutex;
+    PromAgentInfo mAgentInfo{0, 0, 0, 0};
+    std::chrono::steady_clock::time_point mLastUpdateTime;
 
     std::shared_ptr<Timer> mTimer;
     EventPool mEventPool;

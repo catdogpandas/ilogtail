@@ -30,6 +30,7 @@
 #include "logger/Logger.h"
 #include "monitor/metric_constants/MetricConstants.h"
 #include "prometheus/Constants.h"
+#include "prometheus/PrometheusInputRunner.h"
 #include "prometheus/Utils.h"
 #include "prometheus/async/PromFuture.h"
 #include "prometheus/async/PromHttpRequest.h"
@@ -296,6 +297,8 @@ TargetSubscriberScheduler::BuildSubscriberTimerEvent(std::chrono::steady_clock::
     if (!mETag.empty()) {
         httpHeader[prometheus::IF_NONE_MATCH] = mETag;
     }
+    auto body = TargetsInfoToString();
+    LOG_INFO(sLogger, ("body", body));
     auto request = std::make_unique<PromHttpRequest>(HTTP_GET,
                                                      false,
                                                      mServiceHost,
@@ -303,7 +306,7 @@ TargetSubscriberScheduler::BuildSubscriberTimerEvent(std::chrono::steady_clock::
                                                      "/jobs/" + URLEncode(GetId()) + "/targets",
                                                      "collector_id=" + mPodName,
                                                      httpHeader,
-                                                     "",
+                                                     body,
                                                      HttpResponse(),
                                                      prometheus::RefeshIntervalSeconds,
                                                      1,
@@ -311,6 +314,26 @@ TargetSubscriberScheduler::BuildSubscriberTimerEvent(std::chrono::steady_clock::
     auto timerEvent = std::make_unique<HttpRequestTimerEvent>(execTime, std::move(request));
 
     return timerEvent;
+}
+
+string TargetSubscriberScheduler::TargetsInfoToString() const {
+    Json::Value root;
+    root[prometheus::JOB_NAME] = mJobName;
+    auto agentInfo = PrometheusInputRunner::GetInstance()->GetAgentInfo();
+    root[prometheus::AGENT_INFO][prometheus::CPU_USAGE] = agentInfo.mCpuUsage;
+    root[prometheus::AGENT_INFO][prometheus::CPU_LIMIT] = agentInfo.mCpuLimit;
+    root[prometheus::AGENT_INFO][prometheus::MEM_USAGE] = agentInfo.mMemUsage;
+    root[prometheus::AGENT_INFO][prometheus::MEM_LIMIT] = agentInfo.mMemLimit;
+    {
+        ReadLock lock(mRWLock);
+        for (const auto& [k, v] : mScrapeSchedulerMap) {
+            Json::Value targetInfo;
+            targetInfo[prometheus::HASH] = v->GetId();
+            targetInfo[prometheus::SERIES] = v->GetLastScrapeTimeSeries();
+            root[prometheus::TARGETS_INFO].append(targetInfo);
+        }
+    }
+    return root.toStyledString();
 }
 
 void TargetSubscriberScheduler::CancelAllScrapeScheduler() {

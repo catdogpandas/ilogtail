@@ -69,13 +69,14 @@ private:
     BuildScrapeSchedulerSet(std::vector<Labels>& scrapeSchedulerGroup);
 
     std::unique_ptr<TimerEvent> BuildSubscriberTimerEvent(std::chrono::steady_clock::time_point execTime);
+    std::string TargetsInfoToString() const;
     void UpdateScrapeScheduler(std::unordered_map<std::string, std::shared_ptr<ScrapeScheduler>>&);
 
     void CancelAllScrapeScheduler();
 
     std::shared_ptr<ScrapeConfig> mScrapeConfigPtr;
 
-    ReadWriteLock mRWLock;
+    mutable ReadWriteLock mRWLock;
     std::unordered_map<std::string, std::shared_ptr<ScrapeScheduler>> mScrapeSchedulerMap;
 
     std::string mJobName;

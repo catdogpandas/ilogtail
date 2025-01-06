@@ -31,6 +31,7 @@
 #include "common/http/Curl.h"
 #include "common/timer/Timer.h"
 #include "logger/Logger.h"
+#include "monitor/Monitor.h"
 #include "monitor/metric_constants/MetricConstants.h"
 #include "plugin/flusher/sls/FlusherSLS.h"
 #include "prometheus/Constants.h"
@@ -51,6 +52,7 @@ PrometheusInputRunner::PrometheusInputRunner()
       mEventPool(true),
       mUnRegisterMs(0) {
     mTimer = std::make_shared<Timer>();
+    mLastUpdateTime = std::chrono::steady_clock::now();
 
     // self monitor
     MetricLabels labels;
@@ -292,5 +294,22 @@ string PrometheusInputRunner::GetAllProjects() {
 
 void PrometheusInputRunner::CheckGC() {
     mEventPool.CheckGC();
+}
+
+PromAgentInfo PrometheusInputRunner::GetAgentInfo() {
+    std::lock_guard<mutex> lock(mAgentInfoMutex);
+    auto curTime = std::chrono::steady_clock::now();
+#ifdef APSARA_UNIT_TEST_MAIN
+    curTime += std::chrono::seconds(prometheus::RefeshIntervalSeconds);
+#endif
+    if (curTime - mLastUpdateTime >= std::chrono::seconds(prometheus::RefeshIntervalSeconds)) {
+        mLastUpdateTime = curTime;
+        mAgentInfo.mCpuUsage = LogtailMonitor::GetInstance()->GetCpuUsage();
+        mAgentInfo.mMemUsage = LogtailMonitor::GetInstance()->GetMemoryUsage();
+        mAgentInfo.mCpuLimit = AppConfig::GetInstance()->GetCpuUsageUpLimit();
+        mAgentInfo.mMemLimit = AppConfig::GetInstance()->GetMemUsageUpLimit();
+    }
+
+    return mAgentInfo;
 }
 }; // namespace logtail
