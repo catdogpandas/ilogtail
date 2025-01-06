@@ -234,6 +234,7 @@ void TargetSubscriberSchedulerUnittest::TestTargetsInfoToString() {
     ParseJsonTable(res, data, errorMsg);
     APSARA_TEST_EQUAL(2.0, data[prometheus::AGENT_INFO][prometheus::CPU_LIMIT].asFloat());
     APSARA_TEST_EQUAL((uint64_t)3, data[prometheus::TARGETS_INFO].size());
+    APSARA_TEST_EQUAL(true, data[prometheus::AGENT_INFO][prometheus::HEALTH].asFloat() > 0.6);
 }
 
 UNIT_TEST_CASE(TargetSubscriberSchedulerUnittest, OnInitScrapeJobEvent)

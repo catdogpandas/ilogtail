@@ -125,5 +125,6 @@ const char* const MEM_LIMIT = "MemLimit";
 const char* const MEM_USAGE = "MemUsage";
 const char* const HASH = "Hash";
 const char* const SERIES = "Series";
+const char* const HEALTH = "Health";
 
 } // namespace logtail::prometheus

@@ -35,6 +35,7 @@ struct PromAgentInfo {
     float mMemUsage;
     float mCpuLimit;
     float mMemLimit;
+    float mHealth;
 };
 
 class PrometheusInputRunner : public InputRunner {

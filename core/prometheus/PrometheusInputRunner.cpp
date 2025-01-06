@@ -33,6 +33,7 @@
 #include "logger/Logger.h"
 #include "monitor/Monitor.h"
 #include "monitor/metric_constants/MetricConstants.h"
+#include "pipeline/queue/ProcessQueueManager.h"
 #include "plugin/flusher/sls/FlusherSLS.h"
 #include "prometheus/Constants.h"
 #include "prometheus/Utils.h"
@@ -308,6 +309,33 @@ PromAgentInfo PrometheusInputRunner::GetAgentInfo() {
         mAgentInfo.mMemUsage = LogtailMonitor::GetInstance()->GetMemoryUsage();
         mAgentInfo.mCpuLimit = AppConfig::GetInstance()->GetCpuUsageUpLimit();
         mAgentInfo.mMemLimit = AppConfig::GetInstance()->GetMemUsageUpLimit();
+
+        int queueNums = 0;
+        int validToPushNums = 0;
+
+        {
+            ReadLock lock(mSubscriberMapRWLock);
+            queueNums = mTargetSubscriberSchedulerMap.size();
+            for (auto& [k, v] : mTargetSubscriberSchedulerMap) {
+                if (ProcessQueueManager::GetInstance()->IsValidToPush(v->mQueueKey)) {
+                    validToPushNums++;
+                }
+            }
+        }
+        mAgentInfo.mHealth = 0;
+        if (mAgentInfo.mCpuLimit > 0.0) {
+            mAgentInfo.mHealth += (1 - mAgentInfo.mCpuUsage / mAgentInfo.mCpuLimit);
+        }
+        if (mAgentInfo.mMemLimit > 0.0) {
+            mAgentInfo.mHealth += (1 - mAgentInfo.mMemUsage / mAgentInfo.mMemLimit);
+        }
+        if (queueNums > 0) {
+            mAgentInfo.mHealth += (1.0 * validToPushNums / queueNums);
+        } else {
+            mAgentInfo.mHealth += 1;
+        }
+
+        mAgentInfo.mHealth /= 3;
     }
 
     return mAgentInfo;

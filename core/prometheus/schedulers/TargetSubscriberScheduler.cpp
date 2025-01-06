@@ -324,6 +324,7 @@ string TargetSubscriberScheduler::TargetsInfoToString() const {
     root[prometheus::AGENT_INFO][prometheus::CPU_LIMIT] = agentInfo.mCpuLimit;
     root[prometheus::AGENT_INFO][prometheus::MEM_USAGE] = agentInfo.mMemUsage;
     root[prometheus::AGENT_INFO][prometheus::MEM_LIMIT] = agentInfo.mMemLimit;
+    root[prometheus::AGENT_INFO][prometheus::HEALTH] = agentInfo.mHealth;
     {
         ReadLock lock(mRWLock);
         for (const auto& [k, v] : mScrapeSchedulerMap) {
