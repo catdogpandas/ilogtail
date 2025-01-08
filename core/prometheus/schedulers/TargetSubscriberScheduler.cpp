@@ -329,7 +329,7 @@ string TargetSubscriberScheduler::TargetsInfoToString() const {
         for (const auto& [k, v] : mScrapeSchedulerMap) {
             Json::Value targetInfo;
             targetInfo[prometheus::HASH] = v->GetId();
-            targetInfo[prometheus::SERIES] = v->GetLastScrapeTimeSeries();
+            targetInfo[prometheus::SIZE] = v->GetLastScrapeSize();
             root[prometheus::TARGETS_INFO].append(targetInfo);
         }
     }

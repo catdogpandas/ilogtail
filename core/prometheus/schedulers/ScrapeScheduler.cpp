@@ -50,7 +50,7 @@ ScrapeScheduler::ScrapeScheduler(std::shared_ptr<ScrapeConfig> scrapeConfigPtr,
       mHost(std::move(host)),
       mPort(port),
       mQueueKey(queueKey),
-      mScrapeSamplesScraped(0) {
+      mScrapeResponseSizeBytes(0) {
     string tmpTargetURL = mScrapeConfigPtr->mScheme + "://" + mHost + ":" + ToString(mPort)
         + mScrapeConfigPtr->mMetricsPath
         + (mScrapeConfigPtr->mQueryString.empty() ? "" : "?" + mScrapeConfigPtr->mQueryString);
@@ -96,7 +96,7 @@ void ScrapeScheduler::OnMetricResult(HttpResponse& response, uint64_t) {
     mPromStreamScraper.FlushCache();
     mPromStreamScraper.SetAutoMetricMeta(scrapeDurationSeconds, upState, scrapeState);
     mPromStreamScraper.SendMetrics();
-    mScrapeSamplesScraped = mPromStreamScraper.mScrapeSamplesScraped;
+    mScrapeResponseSizeBytes = mPromStreamScraper.mRawSize;
     mPromStreamScraper.Reset();
 
     mPluginTotalDelayMs->Add(scrapeDurationMilliSeconds);
