@@ -51,11 +51,10 @@ ScrapeScheduler::ScrapeScheduler(std::shared_ptr<ScrapeConfig> scrapeConfigPtr,
       mPort(port),
       mQueueKey(queueKey),
       mScrapeResponseSizeBytes(0) {
-    string tmpTargetURL = mScrapeConfigPtr->mScheme + "://" + mHost + ":" + ToString(mPort)
-        + mScrapeConfigPtr->mMetricsPath
-        + (mScrapeConfigPtr->mQueryString.empty() ? "" : "?" + mScrapeConfigPtr->mQueryString);
-    mHash = mScrapeConfigPtr->mJobName + tmpTargetURL + ToString(labels.Hash());
     mInstance = mHost + ":" + ToString(mPort);
+    std::ostringstream hash;
+    hash << std::setw(16) << std::setfill('0') << std::hex << labels.Hash();
+    mHash = mScrapeConfigPtr->mJobName + mInstance + hash.str();
     mInterval = mScrapeConfigPtr->mScrapeIntervalSeconds;
 
     mPromStreamScraper.mHash = mHash;
