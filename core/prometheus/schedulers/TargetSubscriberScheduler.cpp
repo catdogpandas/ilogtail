@@ -30,7 +30,6 @@
 #include "logger/Logger.h"
 #include "monitor/metric_constants/MetricConstants.h"
 #include "prometheus/Constants.h"
-#include "prometheus/PrometheusInputRunner.h"
 #include "prometheus/Utils.h"
 #include "prometheus/async/PromFuture.h"
 #include "prometheus/async/PromHttpRequest.h"
@@ -206,6 +205,9 @@ TargetSubscriberScheduler::BuildScrapeSchedulerSet(std::vector<Labels>& targetGr
         }
 
         string address = resultLabel.Get(prometheus::ADDRESS_LABEL_NAME);
+        if (resultLabel.Get(prometheus::INSTANCE).empty()) {
+            resultLabel.Set(prometheus::INSTANCE, address);
+        }
 
         auto m = address.find(':');
         if (m == string::npos) {
@@ -294,7 +296,6 @@ TargetSubscriberScheduler::BuildSubscriberTimerEvent(std::chrono::steady_clock::
     if (!mETag.empty()) {
         httpHeader[prometheus::IF_NONE_MATCH] = mETag;
     }
-    auto body = TargetsInfoToString();
     auto request = std::make_unique<PromHttpRequest>(HTTP_GET,
                                                      false,
                                                      mServiceHost,
@@ -302,7 +303,7 @@ TargetSubscriberScheduler::BuildSubscriberTimerEvent(std::chrono::steady_clock::
                                                      "/jobs/" + URLEncode(GetId()) + "/targets",
                                                      "collector_id=" + mPodName,
                                                      httpHeader,
-                                                     body,
+                                                     "",
                                                      HttpResponse(),
                                                      prometheus::RefeshIntervalSeconds,
                                                      1,
@@ -310,26 +311,6 @@ TargetSubscriberScheduler::BuildSubscriberTimerEvent(std::chrono::steady_clock::
     auto timerEvent = std::make_unique<HttpRequestTimerEvent>(execTime, std::move(request));
 
     return timerEvent;
-}
-
-string TargetSubscriberScheduler::TargetsInfoToString() const {
-    Json::Value root;
-    auto agentInfo = PrometheusInputRunner::GetInstance()->GetAgentInfo();
-    root[prometheus::AGENT_INFO][prometheus::CPU_USAGE] = agentInfo.mCpuUsage;
-    root[prometheus::AGENT_INFO][prometheus::CPU_LIMIT] = agentInfo.mCpuLimit;
-    root[prometheus::AGENT_INFO][prometheus::MEM_USAGE] = agentInfo.mMemUsage;
-    root[prometheus::AGENT_INFO][prometheus::MEM_LIMIT] = agentInfo.mMemLimit;
-    root[prometheus::AGENT_INFO][prometheus::HEALTH] = agentInfo.mHealth;
-    {
-        ReadLock lock(mRWLock);
-        for (const auto& [k, v] : mScrapeSchedulerMap) {
-            Json::Value targetInfo;
-            targetInfo[prometheus::HASH] = v->GetId();
-            targetInfo[prometheus::SIZE] = v->GetLastScrapeSize();
-            root[prometheus::TARGETS_INFO].append(targetInfo);
-        }
-    }
-    return root.toStyledString();
 }
 
 void TargetSubscriberScheduler::CancelAllScrapeScheduler() {
