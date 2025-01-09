@@ -24,7 +24,6 @@
 #include "monitor/metric_models/MetricTypes.h"
 #include "pipeline/queue/QueueKey.h"
 #include "prometheus/PromSelfMonitor.h"
-#include "prometheus/component/StreamScraper.h"
 #include "prometheus/schedulers/ScrapeConfig.h"
 
 #ifdef APSARA_UNIT_TEST_MAIN
@@ -33,21 +32,29 @@
 
 namespace logtail {
 
+struct PromTargetInfo {
+    Labels mLabels;
+    std::string mInstance;
+    std::string mHash;
+    std::string mHashForOperator;
+    bool mImmediate = false;
+};
+
 class ScrapeScheduler : public BaseScheduler {
 public:
     ScrapeScheduler(std::shared_ptr<ScrapeConfig> scrapeConfigPtr,
                     std::string host,
                     int32_t port,
-                    Labels labels,
                     QueueKey queueKey,
                     size_t inputIndex,
-                    std::string rawHash);
+                    const PromTargetInfo& targetInfo);
     ScrapeScheduler(const ScrapeScheduler&) = delete;
     ~ScrapeScheduler() override = default;
 
     void OnMetricResult(HttpResponse&, uint64_t timestampMilliSec);
 
     std::string GetId() const;
+    std::string GetHashForOperator() const;
 
     void SetComponent(std::shared_ptr<Timer> timer, EventPool* eventPool);
     uint64_t GetLastScrapeSize() const { return mScrapeResponseSizeBytes; }
@@ -61,16 +68,13 @@ private:
     std::unique_ptr<TimerEvent> BuildScrapeTimerEvent(std::chrono::steady_clock::time_point execTime);
 
     std::shared_ptr<ScrapeConfig> mScrapeConfigPtr;
-    std::string mHash;
     std::string mHost;
     int32_t mPort;
-    std::string mInstance;
+    PromTargetInfo mTargetInfo;
 
     // pipeline
     QueueKey mQueueKey;
     size_t mInputIndex;
-
-    Labels mTargetLabels;
 
     // auto metrics
     std::atomic_uint64_t mScrapeResponseSizeBytes;

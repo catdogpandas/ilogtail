@@ -17,14 +17,12 @@
 #pragma once
 
 #include <cstdint>
+#include <json/json.h>
 
 #include <memory>
 #include <string>
 
-#include "json/json.h"
-
 #include "common/http/HttpResponse.h"
-#include "common/timer/Timer.h"
 #include "pipeline/queue/QueueKey.h"
 #include "prometheus/PromSelfMonitor.h"
 #include "prometheus/schedulers/BaseScheduler.h"
@@ -32,13 +30,6 @@
 #include "prometheus/schedulers/ScrapeScheduler.h"
 
 namespace logtail {
-
-struct PromTargetInfo {
-    Labels mLabels;
-    std::string mTarget;
-    std::string mHash;
-    bool mImmediate = false;
-};
 
 class TargetSubscriberScheduler : public BaseScheduler {
 public:

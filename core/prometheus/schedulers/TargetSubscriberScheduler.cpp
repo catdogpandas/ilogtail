@@ -178,6 +178,8 @@ bool TargetSubscriberScheduler::ParseScrapeSchedulerGroup(const std::string& con
         rawHashStream << std::setw(16) << std::setfill('0') << std::hex << labels.Hash();
         string rawAddress = labels.Get(prometheus::ADDRESS_LABEL_NAME);
         targetInfo.mHash = mScrapeConfigPtr->mJobName + rawAddress + rawHashStream.str();
+        targetInfo.mHashForOperator = targetInfo.mHash;
+        targetInfo.mInstance = targets[0];
 
         labels.Set(prometheus::JOB, mJobName);
         labels.Set(prometheus::ADDRESS_LABEL_NAME, targets[0]);
@@ -194,7 +196,7 @@ bool TargetSubscriberScheduler::ParseScrapeSchedulerGroup(const std::string& con
         targetInfo.mLabels = labels;
 
         if (element.isMember(prometheus::TARGET_HASH) && element[prometheus::TARGET_HASH].isString()) {
-            targetInfo.mHash = element[prometheus::TARGET_HASH].asString();
+            targetInfo.mHashForOperator = element[prometheus::TARGET_HASH].asString();
         }
 
         if (element.isMember(prometheus::TARGET_IMMEDIATE) && element[prometheus::TARGET_IMMEDIATE].isBool()) {
@@ -238,8 +240,8 @@ TargetSubscriberScheduler::BuildScrapeSchedulerSet(std::vector<PromTargetInfo>& 
         }
 
         string host = address.substr(0, m);
-        auto scrapeScheduler = std::make_shared<ScrapeScheduler>(
-            mScrapeConfigPtr, host, port, resultLabel, mQueueKey, mInputIndex, targetInfo.mHash);
+        auto scrapeScheduler
+            = std::make_shared<ScrapeScheduler>(mScrapeConfigPtr, host, port, mQueueKey, mInputIndex, targetInfo);
 
         scrapeScheduler->SetComponent(mTimer, mEventPool);
 
@@ -343,7 +345,7 @@ string TargetSubscriberScheduler::TargetsInfoToString() const {
         ReadLock lock(mRWLock);
         for (const auto& [k, v] : mScrapeSchedulerMap) {
             Json::Value targetInfo;
-            targetInfo[prometheus::HASH] = v->GetId();
+            targetInfo[prometheus::HASH] = v->GetHashForOperator();
             targetInfo[prometheus::SIZE] = v->GetLastScrapeSize();
             root[prometheus::TARGETS_INFO].append(targetInfo);
         }

@@ -317,7 +317,6 @@ void TargetSubscriberSchedulerUnittest::TestBuildScrapeSchedulerSet() {
     startTimeList.reserve(result.size());
     for (auto& it : result) {
         startTimeList.emplace_back(it.second->GetId(), it.second->GetNextExecTime());
-        std::cout << it.second->GetId() << std::endl;
     }
     APSARA_TEST_EQUAL(3UL, startTimeList.size());
     APSARA_TEST_NOT_EQUAL(startTimeList[0].second, startTimeList[1].second);

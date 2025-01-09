@@ -22,7 +22,6 @@
 #include <string>
 #include <utility>
 
-#include "common/StringTools.h"
 #include "common/TimeUtil.h"
 #include "common/http/Constant.h"
 #include "common/timer/HttpRequestTimerEvent.h"
@@ -42,20 +41,16 @@ namespace logtail {
 ScrapeScheduler::ScrapeScheduler(std::shared_ptr<ScrapeConfig> scrapeConfigPtr,
                                  string host,
                                  int32_t port,
-                                 Labels labels,
                                  QueueKey queueKey,
                                  size_t inputIndex,
-                                 string rawHash)
+                                 const PromTargetInfo& targetInfo)
     : mScrapeConfigPtr(std::move(scrapeConfigPtr)),
-      mHash(rawHash),
       mHost(std::move(host)),
       mPort(port),
+      mTargetInfo(targetInfo),
       mQueueKey(queueKey),
       mInputIndex(inputIndex),
-      mTargetLabels(labels),
       mScrapeResponseSizeBytes(0) {
-    mInstance = mHost + ":" + ToString(mPort);
-
     mInterval = mScrapeConfigPtr->mScrapeIntervalSeconds;
 }
 
@@ -85,8 +80,8 @@ void ScrapeScheduler::OnMetricResult(HttpResponse& response, uint64_t) {
 
     if (response.GetStatusCode() != 200) {
         LOG_WARNING(sLogger,
-                    ("scrape failed, status code",
-                     response.GetStatusCode())("target", mHash)("curl msg", response.GetNetworkStatus().mMessage));
+                    ("scrape failed, status code", response.GetStatusCode())("target", mTargetInfo.mHash)(
+                        "curl msg", response.GetNetworkStatus().mMessage));
     }
 
     auto scrapeDurationSeconds = scrapeDurationMilliSeconds * sRate;
@@ -103,7 +98,11 @@ void ScrapeScheduler::OnMetricResult(HttpResponse& response, uint64_t) {
 
 
 string ScrapeScheduler::GetId() const {
-    return mHash;
+    return mTargetInfo.mHash;
+}
+
+string ScrapeScheduler::GetHashForOperator() const {
+    return mTargetInfo.mHashForOperator;
 }
 
 void ScrapeScheduler::SetComponent(shared_ptr<Timer> timer, EventPool* eventPool) {
@@ -175,7 +174,8 @@ std::unique_ptr<TimerEvent> ScrapeScheduler::BuildScrapeTimerEvent(std::chrono::
         mScrapeConfigPtr->mRequestHeaders,
         "",
         HttpResponse(
-            new prom::StreamScraper(mTargetLabels, mQueueKey, mInputIndex, mHash, mEventPool, mLatestScrapeTime),
+            new prom::StreamScraper(
+                mTargetInfo.mLabels, mQueueKey, mInputIndex, mTargetInfo.mHash, mEventPool, mLatestScrapeTime),
             [](void* p) { delete static_cast<prom::StreamScraper*>(p); },
             prom::StreamScraper::MetricWriteCallback),
         mScrapeConfigPtr->mScrapeTimeoutSeconds,
@@ -205,7 +205,7 @@ void ScrapeScheduler::Cancel() {
 void ScrapeScheduler::InitSelfMonitor(const MetricLabels& defaultLabels) {
     mSelfMonitor = std::make_shared<PromSelfMonitorUnsafe>();
     MetricLabels labels = defaultLabels;
-    labels.emplace_back(METRIC_LABEL_KEY_INSTANCE, mInstance);
+    labels.emplace_back(METRIC_LABEL_KEY_INSTANCE, mTargetInfo.mInstance);
 
     static const std::unordered_map<std::string, MetricType> sScrapeMetricKeys
         = {{METRIC_PLUGIN_OUT_EVENTS_TOTAL, MetricType::METRIC_TYPE_COUNTER},
