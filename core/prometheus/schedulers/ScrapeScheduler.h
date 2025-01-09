@@ -40,7 +40,8 @@ public:
                     int32_t port,
                     Labels labels,
                     QueueKey queueKey,
-                    size_t inputIndex);
+                    size_t inputIndex,
+                    std::string rawHash);
     ScrapeScheduler(const ScrapeScheduler&) = delete;
     ~ScrapeScheduler() override = default;
 

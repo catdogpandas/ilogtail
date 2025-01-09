@@ -33,6 +33,13 @@
 
 namespace logtail {
 
+struct PromTargetInfo {
+    Labels mLabels;
+    std::string mTarget;
+    std::string mHash;
+    bool mImmediate = false;
+};
+
 class TargetSubscriberScheduler : public BaseScheduler {
 public:
     TargetSubscriberScheduler();
@@ -63,10 +70,10 @@ public:
     uint64_t mUnRegisterMs;
 
 private:
-    bool ParseScrapeSchedulerGroup(const std::string& content, std::vector<Labels>& scrapeSchedulerGroup);
+    bool ParseScrapeSchedulerGroup(const std::string& content, std::vector<PromTargetInfo>& scrapeSchedulerGroup);
 
     std::unordered_map<std::string, std::shared_ptr<ScrapeScheduler>>
-    BuildScrapeSchedulerSet(std::vector<Labels>& scrapeSchedulerGroup);
+    BuildScrapeSchedulerSet(std::vector<PromTargetInfo>& scrapeSchedulerGroup);
 
     std::unique_ptr<TimerEvent> BuildSubscriberTimerEvent(std::chrono::steady_clock::time_point execTime);
     std::string TargetsInfoToString() const;

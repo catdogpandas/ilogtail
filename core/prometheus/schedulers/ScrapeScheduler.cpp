@@ -40,12 +40,14 @@ using namespace std;
 namespace logtail {
 
 ScrapeScheduler::ScrapeScheduler(std::shared_ptr<ScrapeConfig> scrapeConfigPtr,
-                                 std::string host,
+                                 string host,
                                  int32_t port,
                                  Labels labels,
                                  QueueKey queueKey,
-                                 size_t inputIndex)
+                                 size_t inputIndex,
+                                 string rawHash)
     : mScrapeConfigPtr(std::move(scrapeConfigPtr)),
+      mHash(rawHash),
       mHost(std::move(host)),
       mPort(port),
       mQueueKey(queueKey),
@@ -53,9 +55,7 @@ ScrapeScheduler::ScrapeScheduler(std::shared_ptr<ScrapeConfig> scrapeConfigPtr,
       mTargetLabels(labels),
       mScrapeResponseSizeBytes(0) {
     mInstance = mHost + ":" + ToString(mPort);
-    std::ostringstream hash;
-    hash << std::setw(16) << std::setfill('0') << std::hex << labels.Hash();
-    mHash = mScrapeConfigPtr->mJobName + mInstance + hash.str();
+
     mInterval = mScrapeConfigPtr->mScrapeIntervalSeconds;
 }
 

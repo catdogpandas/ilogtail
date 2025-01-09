@@ -100,6 +100,8 @@ const char* const SCHEME_LABEL_NAME = "__scheme__";
 const char* const METRICS_PATH_LABEL_NAME = "__metrics_path__";
 const char* const PARAM_LABEL_NAME = "__param_";
 const char* const LABELS = "labels";
+const char* const TARGET_HASH = "hash";
+const char* const TARGET_IMMEDIATE = "target_immediate";
 
 // auto metrics
 const char* const SCRAPE_STATE = "scrape_state";
