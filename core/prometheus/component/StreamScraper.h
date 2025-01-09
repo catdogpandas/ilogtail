@@ -4,10 +4,8 @@
 #include <string>
 
 #include "Labels.h"
-#include "StringTools.h"
 #include "models/PipelineEventGroup.h"
 #include "pipeline/queue/QueueKey.h"
-#include "prometheus/Constants.h"
 
 #ifdef APSARA_UNIT_TEST_MAIN
 #include <vector>
@@ -18,16 +16,11 @@
 namespace logtail::prom {
 class StreamScraper {
 public:
-    StreamScraper(Labels labels, QueueKey queueKey, size_t inputIndex, const std::string& host, int32_t port)
+    StreamScraper(Labels labels, QueueKey queueKey, size_t inputIndex)
         : mEventGroup(PipelineEventGroup(std::make_shared<SourceBuffer>())),
           mQueueKey(queueKey),
           mInputIndex(inputIndex),
-          mTargetLabels(std::move(labels)) {
-        auto instance = host + ":" + ToString(port);
-        if (mTargetLabels.Get(prometheus::INSTANCE).empty()) {
-            mTargetLabels.Set(prometheus::INSTANCE, instance);
-        }
-    }
+          mTargetLabels(std::move(labels)) {}
 
     static size_t MetricWriteCallback(char* buffer, size_t size, size_t nmemb, void* data);
     void FlushCache();

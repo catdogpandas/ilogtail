@@ -45,7 +45,7 @@ ScrapeScheduler::ScrapeScheduler(std::shared_ptr<ScrapeConfig> scrapeConfigPtr,
                                  Labels labels,
                                  QueueKey queueKey,
                                  size_t inputIndex)
-    : mPromStreamScraper(labels, queueKey, inputIndex, host, port),
+    : mPromStreamScraper(labels, queueKey, inputIndex),
       mScrapeConfigPtr(std::move(scrapeConfigPtr)),
       mHost(std::move(host)),
       mPort(port),

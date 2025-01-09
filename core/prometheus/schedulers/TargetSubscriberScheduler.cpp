@@ -206,6 +206,9 @@ TargetSubscriberScheduler::BuildScrapeSchedulerSet(std::vector<Labels>& targetGr
         }
 
         string address = resultLabel.Get(prometheus::ADDRESS_LABEL_NAME);
+        if (resultLabel.Get(prometheus::INSTANCE).empty()) {
+            resultLabel.Set(prometheus::INSTANCE, address);
+        }
 
         auto m = address.find(':');
         if (m == string::npos) {
