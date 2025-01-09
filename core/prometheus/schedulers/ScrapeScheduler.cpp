@@ -57,6 +57,9 @@ ScrapeScheduler::ScrapeScheduler(std::shared_ptr<ScrapeConfig> scrapeConfigPtr,
     hash << std::setw(16) << std::setfill('0') << std::hex << labels.Hash();
     mHash = mScrapeConfigPtr->mJobName + mInstance + hash.str();
     mInterval = mScrapeConfigPtr->mScrapeIntervalSeconds;
+    if (mTargetLabels.Get(prometheus::INSTANCE).empty()) {
+        mTargetLabels.Set(prometheus::INSTANCE, mInstance);
+    }
 }
 
 void ScrapeScheduler::OnMetricResult(HttpResponse& response, uint64_t) {
