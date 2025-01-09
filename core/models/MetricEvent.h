@@ -83,12 +83,13 @@ public:
     void SetTagNoCopy(const StringBuffer& key, const StringBuffer& val);
     void SetTagNoCopy(StringView key, StringView val);
 
-    void EraseIf(const std::function<bool(std::pair<StringView, StringView>)>& condition) { mTags.EraseIf(condition); }
-
     void DelTag(StringView key);
+    void EraseIf(const std::function<bool(std::pair<StringView, StringView>)>& condition) { mTags.EraseIf(condition); }
+    void SortTags() { std::sort(mTags.mInner.begin(), mTags.mInner.end()); };
 
     std::vector<std::pair<StringView, StringView>>::const_iterator TagsBegin() const { return mTags.mInner.begin(); }
     std::vector<std::pair<StringView, StringView>>::const_iterator TagsEnd() const { return mTags.mInner.end(); }
+
     size_t TagsSize() const { return mTags.mInner.size(); }
 
     size_t DataSize() const override;
