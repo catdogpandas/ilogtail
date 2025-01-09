@@ -59,8 +59,6 @@ public:
 private:
     std::unique_ptr<TimerEvent> BuildScrapeTimerEvent(std::chrono::steady_clock::time_point execTime);
 
-    prom::StreamScraper mPromStreamScraper;
-
     std::shared_ptr<ScrapeConfig> mScrapeConfigPtr;
     std::string mHash;
     std::string mHost;
@@ -69,6 +67,9 @@ private:
 
     // pipeline
     QueueKey mQueueKey;
+    size_t mInputIndex;
+
+    Labels mTargetLabels;
 
     // auto metrics
     std::atomic_uint64_t mScrapeResponseSizeBytes;
