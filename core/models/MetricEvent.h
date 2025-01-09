@@ -17,8 +17,8 @@
 #pragma once
 
 #include <cstddef>
+
 #include <map>
-#include <optional>
 #include <string>
 #include <utility>
 #include <vector>
@@ -76,28 +76,14 @@ public:
         mValue = UntypedMultiDoubleValues{multiDoubleValues.mValues, this};
     }
 
-    StringView GetTag(StringView key) const;
-    bool HasTag(StringView key) const;
+    [[nodiscard]] StringView GetTag(StringView key) const;
+    [[nodiscard]] bool HasTag(StringView key) const;
     void SetTag(StringView key, StringView val);
     void SetTag(const std::string& key, const std::string& val);
     void SetTagNoCopy(const StringBuffer& key, const StringBuffer& val);
     void SetTagNoCopy(StringView key, StringView val);
 
-    void PushBackTag(const std::string& key, const std::string& val);
-    void PushBackTagNoCopy(const StringBuffer& key, const StringBuffer& val);
-    void PushBackTagNoCopy(StringView key, StringView val);
-
-    std::optional<size_t> GetTagIndex(StringView key) const {
-        auto it = std::find_if(
-            mTags.mInner.begin(), mTags.mInner.end(), [key](const auto& tag) { return tag.first == key; });
-        return it != mTags.mInner.end() ? std::optional<size_t>(std::distance(mTags.mInner.begin(), it)) : std::nullopt;
-    };
-    void SetTagNameByIndexNoCopy(size_t index, StringView newKey) { mTags.SetNameByIndex(index, newKey); }
-
-    void FinalizeTags(const std::function<bool(std::pair<StringView, StringView>)>& isValid) {
-        mTags.FinalizeItems(isValid);
-    }
-    void SortTags() { std::sort(mTags.mInner.begin(), mTags.mInner.end()); };
+    void EraseIf(const std::function<bool(std::pair<StringView, StringView>)>& condition) { mTags.EraseIf(condition); }
 
     void DelTag(StringView key);
 
@@ -118,7 +104,7 @@ private:
 
     StringView mName;
     MetricValue mValue;
-    SizedVector<std::pair<StringView, StringView>> mTags;
+    SizedVectorTags mTags;
 };
 
 } // namespace logtail

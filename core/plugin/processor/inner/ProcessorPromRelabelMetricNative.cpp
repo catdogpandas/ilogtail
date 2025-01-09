@@ -85,25 +85,7 @@ bool ProcessorPromRelabelMetricNative::ProcessEvent(PipelineEventPtr& e, const G
     sourceEvent.SetTagNoCopy(prometheus::NAME, sourceEvent.GetName());
 
     for (const auto& [k, v] : targetTags) {
-        auto tagIndex = sourceEvent.GetTagIndex(k);
-        if (tagIndex.has_value()) {
-            if (!mScrapeConfigPtr->mHonorLabels) {
-                // metric event labels is secondary
-                // if confiliction, then rename it exported_<label_name>
-                auto exportedKey = prometheus::EXPORTED_PREFIX + k.to_string();
-                auto exportedTagIndex = sourceEvent.GetTagIndex(exportedKey);
-                if (exportedTagIndex.has_value()) {
-                    auto exportedExportedKey = prometheus::EXPORTED_PREFIX + exportedKey;
-                    auto sb = sourceEvent.GetSourceBuffer()->CopyString(exportedExportedKey);
-                    sourceEvent.SetTagNameByIndexNoCopy(exportedTagIndex.value(), StringView(sb.data, sb.size));
-                }
-                auto sb = sourceEvent.GetSourceBuffer()->CopyString(exportedKey);
-                sourceEvent.SetTagNameByIndexNoCopy(tagIndex.value(), StringView(sb.data, sb.size));
-                sourceEvent.PushBackTagNoCopy(k, v);
-            }
-        } else {
-            sourceEvent.PushBackTagNoCopy(k, v);
-        }
+        AppendLabel(k, v, sourceEvent, mScrapeConfigPtr->mHonorLabels);
     }
 
     if (!mScrapeConfigPtr->mMetricRelabelConfigs.Empty()
@@ -113,17 +95,41 @@ bool ProcessorPromRelabelMetricNative::ProcessEvent(PipelineEventPtr& e, const G
     // set metricEvent name
     sourceEvent.SetNameNoCopy(sourceEvent.GetTag(prometheus::NAME));
 
-    sourceEvent.FinalizeTags([](const std::pair<StringView, StringView>& tag) -> bool {
+    sourceEvent.EraseIf([](const std::pair<StringView, StringView>& tag) -> bool {
         if (tag.first.starts_with("__") && tag.first != prometheus::NAME) {
-            return false;
+            return true;
         }
-        return true;
+        return false;
     });
 
-    sourceEvent.SortTags();
+    for (const auto& [k, v] : mScrapeConfigPtr->mExternalLabels) {
+        AppendLabel(k, v, sourceEvent, mScrapeConfigPtr->mHonorLabels);
+    }
 
     return true;
 }
+
+void ProcessorPromRelabelMetricNative::AppendLabel(StringView k, StringView v, MetricEvent& e, bool honorLabels) const {
+    auto tagValue = e.GetTag(k);
+    if (!tagValue.empty()) {
+        if (!honorLabels) {
+            // metric event labels is secondary
+            // if confiliction, then rename it exported_<label_name>
+            auto exportedKey = prometheus::EXPORTED_PREFIX + k.to_string();
+            auto exportedTagValue = e.GetTag(exportedKey);
+            if (!exportedTagValue.empty()) {
+                auto exportedExportedKey = prometheus::EXPORTED_PREFIX + exportedKey;
+                auto sb = e.GetSourceBuffer()->CopyString(exportedExportedKey);
+                e.SetTagNoCopy(StringView(sb.data, sb.size), exportedTagValue);
+            }
+            auto sb = e.GetSourceBuffer()->CopyString(exportedKey);
+            e.SetTagNoCopy(StringView(sb.data, sb.size), tagValue);
+            e.SetTagNoCopy(k, v);
+        }
+    } else {
+        e.SetTagNoCopy(k, v);
+    }
+};
 
 void ProcessorPromRelabelMetricNative::UpdateAutoMetrics(const PipelineEventGroup& eGroup,
                                                          prom::AutoMetric& autoMetric) const {
@@ -212,9 +218,9 @@ void ProcessorPromRelabelMetricNative::AddMetric(PipelineEventGroup& metricGroup
     metricEvent->SetName(name);
     metricEvent->SetValue<UntypedSingleValue>(value);
     metricEvent->SetTimestamp(timestamp, nanoSec);
-    metricEvent->PushBackTag(prometheus::NAME, name);
+    metricEvent->SetTag(prometheus::NAME, name);
     for (const auto& [k, v] : targetTags) {
-        metricEvent->PushBackTagNoCopy(k, v);
+        metricEvent->SetTagNoCopy(k, v);
     }
 }
 

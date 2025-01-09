@@ -59,27 +59,7 @@ private:
     size_t mAllocatedSize = 0;
 };
 
-
-template <typename T>
-class SizedVector {
-public:
-    void PushBack(T val) { mInner.push_back(val); }
-
-    size_t DataSize() const { return sizeof(decltype(mInner)) + mAllocatedSize; }
-
-    void Clear() {
-        mInner.clear();
-        mAllocatedSize = 0;
-    }
-
-    std::vector<T> mInner;
-
-private:
-    size_t mAllocatedSize = 0;
-};
-
-template <>
-class SizedVector<std::pair<StringView, StringView>> {
+class SizedVectorTags {
 public:
     void Insert(StringView key, StringView val) {
         auto iter = std::find_if(mInner.begin(), mInner.end(), [key](const auto& item) { return item.first == key; });
@@ -92,18 +72,6 @@ public:
         }
     }
 
-    void PushBack(StringView key, StringView val) {
-        mInner.emplace_back(key, val);
-        mAllocatedSize += key.size() + val.size();
-    }
-
-    void SetNameByIndex(size_t index, StringView newKey) {
-        if (index < mInner.size()) {
-            mAllocatedSize = mAllocatedSize - mInner[index].first.size() + newKey.size();
-            mInner[index].first = newKey;
-        }
-    }
-
     void Erase(StringView key) {
         auto iter = std::find_if(mInner.begin(), mInner.end(), [key](const auto& item) { return item.first == key; });
         if (iter != mInner.end()) {
@@ -112,11 +80,11 @@ public:
         }
     }
 
-    void FinalizeItems(const std::function<bool(std::pair<StringView, StringView>)>& isValid) {
+    void EraseIf(const std::function<bool(std::pair<StringView, StringView>)>& condition) {
         size_t index = 0;
         mAllocatedSize = 0;
         for (const auto& item : mInner) {
-            if (!isValid(item)) {
+            if (condition(item)) {
                 continue;
             }
             mInner[index++] = item;

@@ -78,18 +78,6 @@ void MetricEvent::SetTagNoCopy(StringView key, StringView val) {
     mTags.Insert(key, val);
 }
 
-void MetricEvent::PushBackTag(const std::string& key, const std::string& val) {
-    PushBackTagNoCopy(GetSourceBuffer()->CopyString(key), GetSourceBuffer()->CopyString(val));
-}
-
-void MetricEvent::PushBackTagNoCopy(const StringBuffer& key, const StringBuffer& val) {
-    PushBackTagNoCopy(StringView(key.data, key.size), StringView(val.data, val.size));
-}
-
-void MetricEvent::PushBackTagNoCopy(StringView key, StringView val) {
-    mTags.PushBack(key, val);
-}
-
 void MetricEvent::DelTag(StringView key) {
     mTags.Erase(key);
 }
