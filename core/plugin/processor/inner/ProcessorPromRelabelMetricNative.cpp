@@ -82,7 +82,6 @@ bool ProcessorPromRelabelMetricNative::ProcessEvent(PipelineEventPtr& e, const G
         return false;
     }
     auto& sourceEvent = e.Cast<MetricEvent>();
-    sourceEvent.SetTagNoCopy(prometheus::NAME, sourceEvent.GetName());
 
     for (const auto& [k, v] : targetTags) {
         AppendLabel(k, v, sourceEvent, mScrapeConfigPtr->mHonorLabels);
@@ -103,6 +102,7 @@ bool ProcessorPromRelabelMetricNative::ProcessEvent(PipelineEventPtr& e, const G
     });
 
     for (const auto& [k, v] : mScrapeConfigPtr->mExternalLabels) {
+        // the lifetime of mExternalLabels is longer than the sourceEvent
         AppendLabel(k, v, sourceEvent, mScrapeConfigPtr->mHonorLabels);
     }
 
