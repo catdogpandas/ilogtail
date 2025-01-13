@@ -101,7 +101,7 @@ const char* const METRICS_PATH_LABEL_NAME = "__metrics_path__";
 const char* const PARAM_LABEL_NAME = "__param_";
 const char* const LABELS = "labels";
 const char* const TARGET_HASH = "hash";
-const char* const TARGET_IMMEDIATE = "target_immediate";
+const char* const REBALANCE_MS = "rebalance_ms";
 
 // auto metrics
 const char* const SCRAPE_STATE = "scrape_state";

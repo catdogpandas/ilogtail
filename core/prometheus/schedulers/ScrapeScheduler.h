@@ -37,7 +37,7 @@ struct PromTargetInfo {
     std::string mInstance;
     std::string mHash;
     std::string mHashForOperator;
-    bool mImmediate = false;
+    uint64_t mRebalanceMs = 0;
 };
 
 class ScrapeScheduler : public BaseScheduler {
@@ -59,6 +59,7 @@ public:
     void SetComponent(std::shared_ptr<Timer> timer, EventPool* eventPool);
     uint64_t GetLastScrapeSize() const { return mScrapeResponseSizeBytes; }
 
+    uint64_t GetReBalanceMs() const { return mTargetInfo.mRebalanceMs; }
     void ScheduleNext() override;
     void ScrapeOnce(std::chrono::steady_clock::time_point execTime);
     void Cancel() override;

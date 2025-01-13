@@ -26,7 +26,6 @@
 #include "common/TimeUtil.h"
 #include "common/http/Constant.h"
 #include "common/timer/HttpRequestTimerEvent.h"
-#include "common/timer/Timer.h"
 #include "logger/Logger.h"
 #include "monitor/metric_constants/MetricConstants.h"
 #include "prometheus/Constants.h"
@@ -105,8 +104,10 @@ void TargetSubscriberScheduler::UpdateScrapeScheduler(
         }
 
         // save new scrape work
+        auto added = 0;
         for (const auto& [k, v] : newScrapeSchedulerMap) {
             if (mScrapeSchedulerMap.find(k) == mScrapeSchedulerMap.end()) {
+                added++;
                 mScrapeSchedulerMap[k] = v;
                 if (mTimer) {
                     auto tmpCurrentMilliSeconds = GetCurrentTimeInMilliSeconds();
@@ -114,13 +115,20 @@ void TargetSubscriberScheduler::UpdateScrapeScheduler(
                         v->GetId(), mScrapeConfigPtr->mScrapeIntervalSeconds, tmpCurrentMilliSeconds);
 
                     // zero-cost upgrade
-                    if (mUnRegisterMs > 0
-                        && (tmpCurrentMilliSeconds + tmpRandSleepMilliSec
-                                - (uint64_t)mScrapeConfigPtr->mScrapeIntervalSeconds * 1000
-                            > mUnRegisterMs)
-                        && (tmpCurrentMilliSeconds + tmpRandSleepMilliSec
-                                - (uint64_t)mScrapeConfigPtr->mScrapeIntervalSeconds * 1000 * 2
-                            < mUnRegisterMs)) {
+                    if ((mUnRegisterMs > 0
+                         && (tmpCurrentMilliSeconds + tmpRandSleepMilliSec
+                                 - (uint64_t)mScrapeConfigPtr->mScrapeIntervalSeconds * 1000
+                             > mUnRegisterMs)
+                         && (tmpCurrentMilliSeconds + tmpRandSleepMilliSec
+                                 - (uint64_t)mScrapeConfigPtr->mScrapeIntervalSeconds * 1000 * 2
+                             < mUnRegisterMs))
+                        || (v->GetReBalanceMs() > 0
+                            && (tmpCurrentMilliSeconds + tmpRandSleepMilliSec
+                                    - (uint64_t)mScrapeConfigPtr->mScrapeIntervalSeconds * 1000
+                                > v->GetReBalanceMs())
+                            && (tmpCurrentMilliSeconds + tmpRandSleepMilliSec
+                                    - (uint64_t)mScrapeConfigPtr->mScrapeIntervalSeconds * 1000 * 2
+                                < v->GetReBalanceMs()))) {
                         // scrape once just now
                         LOG_INFO(sLogger, ("scrape zero cost", ToString(tmpCurrentMilliSeconds)));
                         v->SetScrapeOnceTime(chrono::steady_clock::now(), chrono::system_clock::now());
@@ -129,6 +137,7 @@ void TargetSubscriberScheduler::UpdateScrapeScheduler(
                 }
             }
         }
+        LOG_INFO(sLogger, ("prom targets removed", toRemove.size())("added", added));
     }
 }
 
@@ -199,8 +208,8 @@ bool TargetSubscriberScheduler::ParseScrapeSchedulerGroup(const std::string& con
             targetInfo.mHashForOperator = element[prometheus::TARGET_HASH].asString();
         }
 
-        if (element.isMember(prometheus::TARGET_IMMEDIATE) && element[prometheus::TARGET_IMMEDIATE].isBool()) {
-            targetInfo.mImmediate = element[prometheus::TARGET_IMMEDIATE].asBool();
+        if (element.isMember(prometheus::REBALANCE_MS) && element[prometheus::REBALANCE_MS].isUInt64()) {
+            targetInfo.mRebalanceMs = element[prometheus::REBALANCE_MS].asUInt64();
         }
 
         scrapeSchedulerGroup.push_back(targetInfo);
