@@ -84,7 +84,7 @@ private:
     std::string mPodName;
 
     std::mutex mAgentInfoMutex;
-    PromAgentInfo mAgentInfo{0, 0, 0, 0};
+    PromAgentInfo mAgentInfo{0, 0, 0, 0, 1};
     std::chrono::steady_clock::time_point mLastUpdateTime;
 
     std::shared_ptr<Timer> mTimer;

@@ -26,6 +26,7 @@
 #include "common/TimeUtil.h"
 #include "common/http/Constant.h"
 #include "common/timer/HttpRequestTimerEvent.h"
+#include "common/timer/Timer.h"
 #include "logger/Logger.h"
 #include "monitor/metric_constants/MetricConstants.h"
 #include "prometheus/Constants.h"
