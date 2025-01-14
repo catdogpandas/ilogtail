@@ -41,6 +41,7 @@ using namespace std;
 namespace logtail {
 
 std::chrono::steady_clock::time_point TargetSubscriberScheduler::mLastUpdateTime = std::chrono::steady_clock::now();
+uint64_t TargetSubscriberScheduler::mDelaySeconds = 0;
 TargetSubscriberScheduler::TargetSubscriberScheduler()
     : mQueueKey(0), mInputIndex(0), mServicePort(0), mUnRegisterMs(0) {
 }
@@ -352,11 +353,10 @@ string TargetSubscriberScheduler::TargetsInfoToString() const {
     root[prometheus::AGENT_INFO][prometheus::MEM_USAGE] = agentInfo.mMemUsage;
     root[prometheus::AGENT_INFO][prometheus::MEM_LIMIT] = agentInfo.mMemLimit;
     root[prometheus::AGENT_INFO][prometheus::HEALTH] = agentInfo.mHealth;
-    int execDelayCountSec = -1;
     auto curTime = std::chrono::steady_clock::now();
     auto needToUpdate = curTime - mLastUpdateTime >= std::chrono::seconds(prometheus::RefeshIntervalSeconds);
     if (needToUpdate) {
-        execDelayCountSec = 0;
+        mDelaySeconds = 0;
         mLastUpdateTime = curTime;
     }
     {
@@ -366,13 +366,13 @@ string TargetSubscriberScheduler::TargetsInfoToString() const {
             targetInfo[prometheus::HASH] = v->GetHashForOperator();
             targetInfo[prometheus::SIZE] = v->GetLastScrapeSize();
             if (needToUpdate) {
-                execDelayCountSec += v->mExecDelayCount;
+                mDelaySeconds += v->mExecDelayCount;
                 v->mExecDelayCount = 0;
             }
             root[prometheus::TARGETS_INFO].append(targetInfo);
         }
     }
-    root[prometheus::AGENT_INFO][prometheus::SCRAPE_DELAY_SECONDS] = execDelayCountSec;
+    root[prometheus::AGENT_INFO][prometheus::SCRAPE_DELAY_SECONDS] = mDelaySeconds;
     return root.toStyledString();
 }
 
