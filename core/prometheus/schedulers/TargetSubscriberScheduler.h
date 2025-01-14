@@ -81,6 +81,8 @@ private:
 
     std::string mETag;
 
+    static std::chrono::steady_clock::time_point mLastUpdateTime;
+
     // self monitor
     std::shared_ptr<PromSelfMonitorUnsafe> mSelfMonitor;
     MetricsRecordRef mMetricsRecordRef;
