@@ -59,6 +59,7 @@ public:
 
     // zero cost upgrade
     uint64_t mUnRegisterMs;
+    static std::chrono::steady_clock::time_point mLastUpdateTime;
 
 private:
     bool ParseScrapeSchedulerGroup(const std::string& content, std::vector<PromTargetInfo>& scrapeSchedulerGroup);
@@ -80,8 +81,6 @@ private:
     std::string mJobName;
 
     std::string mETag;
-
-    static std::chrono::steady_clock::time_point mLastUpdateTime;
 
     // self monitor
     std::shared_ptr<PromSelfMonitorUnsafe> mSelfMonitor;

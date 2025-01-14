@@ -40,9 +40,9 @@ using namespace std;
 
 namespace logtail {
 
+std::chrono::steady_clock::time_point TargetSubscriberScheduler::mLastUpdateTime = std::chrono::steady_clock::now();
 TargetSubscriberScheduler::TargetSubscriberScheduler()
     : mQueueKey(0), mInputIndex(0), mServicePort(0), mUnRegisterMs(0) {
-    mLastUpdateTime = std::chrono::steady_clock::now();
 }
 
 bool TargetSubscriberScheduler::Init(const Json::Value& scrapeConfig) {
