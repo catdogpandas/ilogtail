@@ -36,7 +36,6 @@ struct PromTargetInfo {
     Labels mLabels;
     std::string mInstance;
     std::string mHash;
-    std::string mHashForOperator;
     uint64_t mRebalanceMs = 0;
 };
 
@@ -55,7 +54,6 @@ public:
     void OnMetricResult(HttpResponse&, uint64_t timestampMilliSec);
 
     std::string GetId() const;
-    std::string GetHashForOperator() const;
 
     void SetComponent(std::shared_ptr<Timer> timer, EventPool* eventPool);
     uint64_t GetLastScrapeSize() const { return mScrapeResponseSizeBytes; }

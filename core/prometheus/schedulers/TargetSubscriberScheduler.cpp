@@ -190,7 +190,6 @@ bool TargetSubscriberScheduler::ParseScrapeSchedulerGroup(const std::string& con
         rawHashStream << std::setw(16) << std::setfill('0') << std::hex << labels.Hash();
         string rawAddress = labels.Get(prometheus::ADDRESS_LABEL_NAME);
         targetInfo.mHash = mScrapeConfigPtr->mJobName + rawAddress + rawHashStream.str();
-        targetInfo.mHashForOperator = targetInfo.mHash;
         targetInfo.mInstance = targets[0];
 
         labels.Set(prometheus::JOB, mJobName);
@@ -208,7 +207,7 @@ bool TargetSubscriberScheduler::ParseScrapeSchedulerGroup(const std::string& con
         targetInfo.mLabels = labels;
 
         if (element.isMember(prometheus::TARGET_HASH) && element[prometheus::TARGET_HASH].isString()) {
-            targetInfo.mHashForOperator = element[prometheus::TARGET_HASH].asString();
+            targetInfo.mHash = element[prometheus::TARGET_HASH].asString();
         }
 
         if (element.isMember(prometheus::REBALANCE_MS) && element[prometheus::REBALANCE_MS].isUInt64()) {
@@ -363,7 +362,7 @@ string TargetSubscriberScheduler::TargetsInfoToString() const {
         ReadLock lock(mRWLock);
         for (const auto& [k, v] : mScrapeSchedulerMap) {
             Json::Value targetInfo;
-            targetInfo[prometheus::HASH] = v->GetHashForOperator();
+            targetInfo[prometheus::HASH] = v->GetId();
             targetInfo[prometheus::SIZE] = v->GetLastScrapeSize();
             if (needToUpdate) {
                 mDelaySeconds += v->mExecDelayCount;

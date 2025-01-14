@@ -13,6 +13,7 @@ const uint64_t RefeshIntervalSeconds = 5;
 const char* const META = "__meta_";
 const char* const UNDEFINED = "undefined";
 const std::string PROMETHEUS = "prometheus";
+const char* const LC_TARGET_HASH = "lc_target_hash";
 
 // relabel config
 const char* const SOURCE_LABELS = "source_labels";

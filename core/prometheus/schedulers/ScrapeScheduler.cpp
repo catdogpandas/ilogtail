@@ -101,10 +101,6 @@ string ScrapeScheduler::GetId() const {
     return mTargetInfo.mHash;
 }
 
-string ScrapeScheduler::GetHashForOperator() const {
-    return mTargetInfo.mHashForOperator;
-}
-
 void ScrapeScheduler::SetComponent(shared_ptr<Timer> timer, EventPool* eventPool) {
     mTimer = std::move(timer);
     mEventPool = eventPool;
