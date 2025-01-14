@@ -41,6 +41,7 @@ struct PromTargetInfo {
 };
 
 class ScrapeScheduler : public BaseScheduler {
+    friend class TargetSubscriberScheduler;
 public:
     ScrapeScheduler(std::shared_ptr<ScrapeConfig> scrapeConfigPtr,
                     std::string host,
@@ -69,6 +70,7 @@ private:
     std::unique_ptr<TimerEvent> BuildScrapeTimerEvent(std::chrono::steady_clock::time_point execTime);
 
     std::shared_ptr<ScrapeConfig> mScrapeConfigPtr;
+    std::atomic_int mExecDelayCount = 0;
     std::string mHost;
     int32_t mPort;
     PromTargetInfo mTargetInfo;

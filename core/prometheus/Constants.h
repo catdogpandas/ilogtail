@@ -130,5 +130,6 @@ const char* const MEM_USAGE = "MemUsage";
 const char* const HASH = "Hash";
 const char* const SIZE = "Size";
 const char* const HEALTH = "Health";
+const char* const SCRAPE_DELAY_MS = "ScrapeDelayMs";
 
 } // namespace logtail::prometheus

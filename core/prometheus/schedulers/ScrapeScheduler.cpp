@@ -124,6 +124,7 @@ void ScrapeScheduler::ScheduleNext() {
             return true;
         }
         this->DelayExecTime(1);
+        this->mExecDelayCount++;
         this->mPromDelayTotal->Add(1);
         this->ScheduleNext();
         return false;

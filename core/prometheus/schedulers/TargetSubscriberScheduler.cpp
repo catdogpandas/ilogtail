@@ -350,15 +350,19 @@ string TargetSubscriberScheduler::TargetsInfoToString() const {
     root[prometheus::AGENT_INFO][prometheus::MEM_USAGE] = agentInfo.mMemUsage;
     root[prometheus::AGENT_INFO][prometheus::MEM_LIMIT] = agentInfo.mMemLimit;
     root[prometheus::AGENT_INFO][prometheus::HEALTH] = agentInfo.mHealth;
+    int execDelayCountSec = 0;
     {
         ReadLock lock(mRWLock);
         for (const auto& [k, v] : mScrapeSchedulerMap) {
             Json::Value targetInfo;
             targetInfo[prometheus::HASH] = v->GetHashForOperator();
             targetInfo[prometheus::SIZE] = v->GetLastScrapeSize();
+            execDelayCountSec += v->mExecDelayCount;
+            v->mExecDelayCount = 0;
             root[prometheus::TARGETS_INFO].append(targetInfo);
         }
     }
+    root[prometheus::AGENT_INFO][prometheus::SCRAPE_DELAY_MS] = execDelayCountSec;
     return root.toStyledString();
 }
 
