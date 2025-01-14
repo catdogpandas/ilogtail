@@ -41,6 +41,7 @@ namespace logtail {
 
 TargetSubscriberScheduler::TargetSubscriberScheduler()
     : mQueueKey(0), mInputIndex(0), mServicePort(0), mUnRegisterMs(0) {
+    mLastUpdateTime = std::chrono::steady_clock::now();
 }
 
 bool TargetSubscriberScheduler::Init(const Json::Value& scrapeConfig) {
@@ -355,6 +356,7 @@ string TargetSubscriberScheduler::TargetsInfoToString() const {
     auto needToUpdate = curTime - mLastUpdateTime >= std::chrono::seconds(prometheus::RefeshIntervalSeconds);
     if (needToUpdate) {
         execDelayCountSec = 0;
+        mLastUpdateTime = curTime;
     }
     {
         ReadLock lock(mRWLock);
