@@ -26,7 +26,6 @@
 #include "common/TimeUtil.h"
 #include "common/http/Constant.h"
 #include "common/timer/HttpRequestTimerEvent.h"
-#include "common/timer/Timer.h"
 #include "logger/Logger.h"
 #include "monitor/metric_constants/MetricConstants.h"
 #include "prometheus/Constants.h"
@@ -138,7 +137,7 @@ void TargetSubscriberScheduler::UpdateScrapeScheduler(
                 }
             }
         }
-        LOG_INFO(sLogger, ("prom targets removed", toRemove.size())("added", added));
+        LOG_INFO(sLogger, ("prom job", mJobName)("targets removed", toRemove.size())("added", added));
     }
 }
 
