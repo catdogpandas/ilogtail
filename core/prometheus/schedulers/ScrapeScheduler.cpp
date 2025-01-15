@@ -50,7 +50,7 @@ ScrapeScheduler::ScrapeScheduler(std::shared_ptr<ScrapeConfig> scrapeConfigPtr,
       mTargetInfo(targetInfo),
       mQueueKey(queueKey),
       mInputIndex(inputIndex),
-      mScrapeResponseSizeBytes(0) {
+      mScrapeResponseSizeBytes(-1) {
     mInterval = mScrapeConfigPtr->mScrapeIntervalSeconds;
 }
 

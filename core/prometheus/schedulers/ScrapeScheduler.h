@@ -56,7 +56,7 @@ public:
     std::string GetId() const;
 
     void SetComponent(std::shared_ptr<Timer> timer, EventPool* eventPool);
-    uint64_t GetLastScrapeSize() const { return mScrapeResponseSizeBytes; }
+    int64_t GetLastScrapeSize() const { return mScrapeResponseSizeBytes; }
 
     uint64_t GetReBalanceMs() const { return mTargetInfo.mRebalanceMs; }
     void ScheduleNext() override;
@@ -78,7 +78,7 @@ private:
     size_t mInputIndex;
 
     // auto metrics
-    std::atomic_uint64_t mScrapeResponseSizeBytes;
+    std::atomic_int mScrapeResponseSizeBytes;
 
     // self monitor
     std::shared_ptr<PromSelfMonitorUnsafe> mSelfMonitor;
