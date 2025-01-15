@@ -222,9 +222,9 @@ bool TargetSubscriberScheduler::ParseScrapeSchedulerGroup(const std::string& con
 std::unordered_map<std::string, std::shared_ptr<ScrapeScheduler>>
 TargetSubscriberScheduler::BuildScrapeSchedulerSet(std::vector<PromTargetInfo>& targetGroups) {
     std::unordered_map<std::string, std::shared_ptr<ScrapeScheduler>> scrapeSchedulerMap;
-    for (const auto& targetInfo : targetGroups) {
+    for (auto& targetInfo : targetGroups) {
         // Relabel Config
-        Labels resultLabel = targetInfo.mLabels;
+        auto& resultLabel = targetInfo.mLabels;
         vector<string> toDelete;
         if (!mScrapeConfigPtr->mRelabelConfigs.Process(resultLabel, toDelete)) {
             continue;
