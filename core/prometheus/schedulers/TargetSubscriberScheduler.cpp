@@ -108,6 +108,7 @@ void TargetSubscriberScheduler::UpdateScrapeScheduler(
 
         // save new scrape work
         auto added = 0;
+        auto total = 0;
         for (const auto& [k, v] : newScrapeSchedulerMap) {
             if (mScrapeSchedulerMap.find(k) == mScrapeSchedulerMap.end()) {
                 added++;
@@ -140,7 +141,8 @@ void TargetSubscriberScheduler::UpdateScrapeScheduler(
                 }
             }
         }
-        LOG_INFO(sLogger, ("prom job", mJobName)("targets removed", toRemove.size())("added", added));
+        total = mScrapeSchedulerMap.size();
+        LOG_INFO(sLogger, ("prom job", mJobName)("targets removed", toRemove.size())("added", added)("total", total));
     }
 }
 
