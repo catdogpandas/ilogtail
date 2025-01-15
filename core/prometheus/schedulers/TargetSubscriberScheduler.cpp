@@ -352,26 +352,24 @@ string TargetSubscriberScheduler::TargetsInfoToString() const {
     root[prometheus::AGENT_INFO][prometheus::MEM_USAGE] = agentInfo.mMemUsage;
     root[prometheus::AGENT_INFO][prometheus::MEM_LIMIT] = agentInfo.mMemLimit;
     root[prometheus::AGENT_INFO][prometheus::HEALTH] = agentInfo.mHealth;
-    auto curTime = std::chrono::steady_clock::now();
-    auto needToUpdate = curTime - mLastUpdateTime >= std::chrono::seconds(prometheus::RefeshIntervalSeconds);
-    if (needToUpdate) {
-        mDelaySeconds = 0;
-        mLastUpdateTime = curTime;
-    }
     {
         ReadLock lock(mRWLock);
         for (const auto& [k, v] : mScrapeSchedulerMap) {
             Json::Value targetInfo;
             targetInfo[prometheus::HASH] = v->GetId();
             targetInfo[prometheus::SIZE] = v->GetLastScrapeSize();
-            if (needToUpdate) {
-                mDelaySeconds += v->mExecDelayCount;
-                v->mExecDelayCount = 0;
-            }
+            mDelaySeconds += v->mExecDelayCount;
+            v->mExecDelayCount = 0;
             root[prometheus::TARGETS_INFO].append(targetInfo);
         }
     }
+    auto curTime = std::chrono::steady_clock::now();
+    auto needToClear = curTime - mLastUpdateTime >= std::chrono::seconds(prometheus::RefeshIntervalSeconds);
     root[prometheus::AGENT_INFO][prometheus::SCRAPE_DELAY_SECONDS] = mDelaySeconds;
+    if (needToClear) {
+        mDelaySeconds = 0;
+        mLastUpdateTime = curTime;
+    }
     return root.toStyledString();
 }
 
