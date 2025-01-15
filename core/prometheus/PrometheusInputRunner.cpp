@@ -178,6 +178,8 @@ void PrometheusInputRunner::Init() {
                                 mUnRegisterMs = 0;
                             } else {
                                 mUnRegisterMs.store(StringTo<uint64_t>(tmpStr));
+                                // adjust unRegisterMs to scrape targets for zero-cost
+                                mUnRegisterMs -= 1000;
                                 LOG_INFO(sLogger, ("unRegisterMs", ToString(mUnRegisterMs)));
                             }
                         }
