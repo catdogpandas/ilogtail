@@ -8,7 +8,7 @@ using namespace std;
 namespace logtail {
 void BaseScheduler::ExecDone() {
     mExecCount++;
-    while (mLatestExecTime < mFirstExecTime + chrono::seconds(mExecCount * mInterval)) {
+    while (mLatestExecTime > mFirstExecTime + chrono::seconds(mExecCount * mInterval)) {
         mExecCount++;
     }
 
