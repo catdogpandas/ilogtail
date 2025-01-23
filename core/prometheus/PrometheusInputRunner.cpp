@@ -33,7 +33,7 @@
 #include "logger/Logger.h"
 #include "monitor/Monitor.h"
 #include "monitor/metric_constants/MetricConstants.h"
-#include "pipeline/queue/ProcessQueueManager.h"
+#include "collection_pipeline/queue/ProcessQueueManager.h"
 #include "plugin/flusher/sls/FlusherSLS.h"
 #include "prometheus/Constants.h"
 #include "prometheus/Utils.h"
