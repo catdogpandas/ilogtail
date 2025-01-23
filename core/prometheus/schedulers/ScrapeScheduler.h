@@ -41,6 +41,7 @@ struct PromTargetInfo {
 
 class ScrapeScheduler : public BaseScheduler {
     friend class TargetSubscriberScheduler;
+
 public:
     ScrapeScheduler(std::shared_ptr<ScrapeConfig> scrapeConfigPtr,
                     std::string host,

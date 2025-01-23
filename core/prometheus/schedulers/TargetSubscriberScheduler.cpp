@@ -41,7 +41,7 @@ using namespace std;
 namespace logtail {
 
 std::chrono::steady_clock::time_point TargetSubscriberScheduler::mLastUpdateTime = std::chrono::steady_clock::now();
-uint64_t TargetSubscriberScheduler::mDelaySeconds = 0;
+uint64_t TargetSubscriberScheduler::sDelaySeconds = 0;
 TargetSubscriberScheduler::TargetSubscriberScheduler()
     : mQueueKey(0), mInputIndex(0), mServicePort(0), mUnRegisterMs(0) {
 }
@@ -360,16 +360,16 @@ string TargetSubscriberScheduler::TargetsInfoToString() const {
             Json::Value targetInfo;
             targetInfo[prometheus::HASH] = v->GetId();
             targetInfo[prometheus::SIZE] = v->GetLastScrapeSize();
-            mDelaySeconds += v->mExecDelayCount;
+            sDelaySeconds += v->mExecDelayCount;
             v->mExecDelayCount = 0;
             root[prometheus::TARGETS_INFO].append(targetInfo);
         }
     }
     auto curTime = std::chrono::steady_clock::now();
     auto needToClear = curTime - mLastUpdateTime >= std::chrono::seconds(prometheus::RefeshIntervalSeconds);
-    root[prometheus::AGENT_INFO][prometheus::SCRAPE_DELAY_SECONDS] = mDelaySeconds;
+    root[prometheus::AGENT_INFO][prometheus::SCRAPE_DELAY_SECONDS] = sDelaySeconds;
     if (needToClear) {
-        mDelaySeconds = 0;
+        sDelaySeconds = 0;
         mLastUpdateTime = curTime;
     }
     return root.toStyledString();

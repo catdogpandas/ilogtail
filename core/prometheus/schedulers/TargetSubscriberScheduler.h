@@ -60,7 +60,7 @@ public:
     // zero cost upgrade
     uint64_t mUnRegisterMs;
     static std::chrono::steady_clock::time_point mLastUpdateTime;
-    static uint64_t mDelaySeconds;
+    static uint64_t sDelaySeconds;
 private:
     bool ParseScrapeSchedulerGroup(const std::string& content, std::vector<PromTargetInfo>& scrapeSchedulerGroup);
 
