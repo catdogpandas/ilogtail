@@ -22,6 +22,7 @@
 #include <string>
 
 #include "application/Application.h"
+#include "collection_pipeline/queue/ProcessQueueManager.h"
 #include "common/Flags.h"
 #include "common/JsonUtil.h"
 #include "common/StringTools.h"
@@ -33,7 +34,6 @@
 #include "logger/Logger.h"
 #include "monitor/Monitor.h"
 #include "monitor/metric_constants/MetricConstants.h"
-#include "collection_pipeline/queue/ProcessQueueManager.h"
 #include "plugin/flusher/sls/FlusherSLS.h"
 #include "prometheus/Constants.h"
 #include "prometheus/Utils.h"
