@@ -49,7 +49,7 @@ public:
         return &sInstance;
     }
     void CheckGC();
-    void GetAgentInfo(PromAgentInfo &agentInfo);
+    void GetAgentInfo(PromAgentInfo& agentInfo);
 
     // input plugin update
     void UpdateScrapeInput(std::shared_ptr<TargetSubscriberScheduler> targetSubscriber,
