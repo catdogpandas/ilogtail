@@ -35,7 +35,6 @@ struct PromAgentInfo {
     float mMemUsage;
     float mCpuLimit;
     float mMemLimit;
-    float mHealth;
 };
 
 class PrometheusInputRunner : public InputRunner {
@@ -84,7 +83,7 @@ private:
     std::string mPodName;
 
     std::mutex mAgentInfoMutex;
-    PromAgentInfo mAgentInfo{0, 0, 0, 0, 1};
+    PromAgentInfo mAgentInfo{0.0F, 0.0F, 0.0F, 0.0F};
     std::chrono::steady_clock::time_point mLastUpdateTime;
 
     std::shared_ptr<Timer> mTimer;

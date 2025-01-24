@@ -324,20 +324,6 @@ PromAgentInfo PrometheusInputRunner::GetAgentInfo() {
                 }
             }
         }
-        mAgentInfo.mHealth = 0;
-        if (mAgentInfo.mCpuLimit > 0.0) {
-            mAgentInfo.mHealth += (1 - mAgentInfo.mCpuUsage / mAgentInfo.mCpuLimit);
-        }
-        if (mAgentInfo.mMemLimit > 0.0) {
-            mAgentInfo.mHealth += (1 - mAgentInfo.mMemUsage / mAgentInfo.mMemLimit);
-        }
-        if (queueNums > 0) {
-            mAgentInfo.mHealth += (1.0 * validToPushNums / queueNums);
-        } else {
-            mAgentInfo.mHealth += 1;
-        }
-
-        mAgentInfo.mHealth /= 3;
     }
 
     return mAgentInfo;
