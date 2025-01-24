@@ -92,7 +92,7 @@ public:
     // LogInput use it to do flow control.
     float GetRealtimeCpuLevel() { return mRealtimeCpuStat.mCpuUsage / mScaledCpuUsageUpLimit; }
     [[nodiscard]] float GetCpuUsage() const { return mCpuUsage.load(); }
-    [[nodiscard]] float GetMemoryUsage() const { return mMemoryUsage.load(); }
+    [[nodiscard]] int64_t GetMemoryUsage() const { return mMemoryUsage.load(); }
 
 private:
     LogtailMonitor();
@@ -163,7 +163,7 @@ private:
     MemStat mMemStat;
 
     std::atomic<float> mCpuUsage = 0;
-    std::atomic<float> mMemoryUsage = 0;
+    std::atomic<int64_t> mMemoryUsage = 0;
 
     // Current scale up level, updated by CheckScaledCpuUsageUpLimit.
     float mScaledCpuUsageUpLimit;

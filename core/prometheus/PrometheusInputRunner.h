@@ -32,7 +32,7 @@ namespace logtail {
 
 struct PromAgentInfo {
     float mCpuUsage;
-    float mMemUsage;
+    int64_t mMemUsage;
     float mCpuLimit;
     float mMemLimit;
 };
@@ -49,7 +49,7 @@ public:
         return &sInstance;
     }
     void CheckGC();
-    PromAgentInfo GetAgentInfo();
+    void GetAgentInfo(PromAgentInfo &agentInfo);
 
     // input plugin update
     void UpdateScrapeInput(std::shared_ptr<TargetSubscriberScheduler> targetSubscriber,
@@ -82,8 +82,6 @@ private:
     int32_t mServicePort;
     std::string mPodName;
 
-    std::mutex mAgentInfoMutex;
-    PromAgentInfo mAgentInfo{0.0F, 0.0F, 0.0F, 0.0F};
     std::chrono::steady_clock::time_point mLastUpdateTime;
 
     std::shared_ptr<Timer> mTimer;
