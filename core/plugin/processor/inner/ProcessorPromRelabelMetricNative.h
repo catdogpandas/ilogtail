@@ -60,9 +60,9 @@ private:
                    time_t timestamp,
                    uint32_t nanoSec,
                    const GroupTags& targetTags) const;
-    void AppendLabel(StringView k, StringView v, MetricEvent& e, bool honorLabels) const;
 
     std::unique_ptr<ScrapeConfig> mScrapeConfigPtr;
+    std::string mLoongCollectorScraper;
 
 #ifdef APSARA_UNIT_TEST_MAIN
     friend class ProcessorPromRelabelMetricNativeUnittest;

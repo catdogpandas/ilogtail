@@ -60,6 +60,8 @@ private:
 };
 
 class SizedVectorTags {
+    friend class ProcessorPromRelabelMetricNative;
+
 public:
     void Insert(StringView key, StringView val) {
         auto iter = std::find_if(mInner.begin(), mInner.end(), [key](const auto& item) { return item.first == key; });
@@ -78,19 +80,6 @@ public:
             mAllocatedSize -= (iter->first.size() + iter->second.size());
             mInner.erase(iter);
         }
-    }
-
-    void EraseIf(const std::function<bool(std::pair<StringView, StringView>)>& condition) {
-        size_t index = 0;
-        mAllocatedSize = 0;
-        for (const auto& item : mInner) {
-            if (condition(item)) {
-                continue;
-            }
-            mInner[index++] = item;
-            mAllocatedSize += item.first.size() + item.second.size();
-        }
-        mInner.resize(index);
     }
 
     size_t DataSize() const { return sizeof(decltype(mInner)) + mAllocatedSize; }
