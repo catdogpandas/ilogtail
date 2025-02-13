@@ -35,6 +35,7 @@ public:
     void TestProcess();
     void TestParseTargetGroups();
     void TestBuildScrapeSchedulerSet();
+    void TestTargetLabels();
 
 protected:
     void SetUp() override {
@@ -215,10 +216,131 @@ void TargetSubscriberSchedulerUnittest::TestBuildScrapeSchedulerSet() {
     APSARA_TEST_NOT_EQUAL(startTimeList[0].second, startTimeList[2].second);
 }
 
+void TargetSubscriberSchedulerUnittest::TestTargetLabels() {
+    // prepare data
+    auto judgeFunc = [&](const string& targetResponse,
+                         const string& metricsPath,
+                         const string& scheme,
+                         int64_t scrapeIntervalSeconds,
+                         uint64_t scrapeTimeoutSeconds) {
+        std::shared_ptr<TargetSubscriberScheduler> targetSubscriber = std::make_shared<TargetSubscriberScheduler>();
+        APSARA_TEST_TRUE(targetSubscriber->Init(mConfig["ScrapeConfig"]));
+        std::vector<Labels> newScrapeSchedulerSet;
+        APSARA_TEST_TRUE(targetSubscriber->ParseScrapeSchedulerGroup(targetResponse, newScrapeSchedulerSet));
+        APSARA_TEST_EQUAL(1UL, newScrapeSchedulerSet.size());
+
+        auto result = targetSubscriber->BuildScrapeSchedulerSet(newScrapeSchedulerSet);
+        APSARA_TEST_EQUAL(1UL, result.size());
+        APSARA_TEST_EQUAL(result.begin()->second->mMetricsPath, metricsPath);
+        APSARA_TEST_EQUAL(result.begin()->second->mInterval, scrapeIntervalSeconds);
+        APSARA_TEST_EQUAL(result.begin()->second->mScrapeTimeoutSeconds, scrapeTimeoutSeconds);
+        APSARA_TEST_EQUAL(result.begin()->second->mScheme, scheme);
+    };
+
+    string case1 = R"JSON([
+        {
+            "targets": [
+                "192.168.22.7:8080"
+            ],
+            "labels": {
+                "__address__": "192.168.22.7:8080",
+                "__scheme__": "https"
+            }
+        }
+    ])JSON";
+    judgeFunc(case1, "/metrics", "https", 30, 30);
+    string case2 = R"JSON([
+        {
+            "targets": [
+                "192.168.22.7:8080"
+            ],
+            "labels": {
+                "__address__": "192.168.22.7:8080",
+                "__scheme__": "http",
+                "__param_xx": "yy",
+                "__param_yy": "zz"
+            }
+        }
+    ])JSON";
+    judgeFunc(case2, "/metrics?xx=yy&yy=zz", "http", 30, 30);
+    string case3 = R"JSON([
+        {
+            "targets": [
+                "192.168.22.31:6443"
+            ],
+            "labels": {
+                "__address__": "192.168.22.31:6443",
+                "__scheme__": "http",
+                "__metrics_path__": "/metrics/ab/c?d=ef&aa=bb"
+            }
+        }
+    ])JSON";
+    judgeFunc(case3, "/metrics/ab/c?d=ef&aa=bb", "http", 30, 30);
+    string case4 = R"JSON([
+        {
+            "targets": [
+                "192.168.22.7:8080"
+            ],
+            "labels": {
+                "__address__": "192.168.22.7:8080",
+                "__scheme__": "https",
+                "__metrics_path__": "/custom/metrics",
+                "__param_xx": "yy",
+                "__param_yy": "zz"
+            }
+        }
+    ])JSON";
+    judgeFunc(case4, "/custom/metrics?xx=yy&yy=zz", "https", 30, 30);
+    string case5 = R"JSON([
+        {
+            "targets": [
+                "192.168.22.31:6443"
+            ],
+            "labels": {
+                "__address__": "192.168.22.31:6443",
+                "__scheme__": "http",
+                "__metrics_path__": "/metrics/ab/c?d=ef&aa=bb",
+                "__param_yy": "zz"
+            }
+        }
+    ])JSON";
+    judgeFunc(case5, "/metrics/ab/c?d=ef&aa=bb&yy=zz", "http", 30, 30);
+    string case6 = R"JSON([
+        {
+            "targets": [
+                "192.168.22.31:6443"
+            ],
+            "labels": {
+                "__address__": "192.168.22.31:6443",
+                "__scheme__": "http",
+                "__metrics_path__": "/metrics/ab/c?d=ef&aa=bb",
+                "__param_xx": "yy",
+                "__param_yy": "zz"
+            }
+        }
+    ])JSON";
+    judgeFunc(case6, "/metrics/ab/c?d=ef&aa=bb&xx=yy&yy=zz", "http", 30, 30);
+    string case7 = R"JSON([
+        {
+            "targets": [
+                "192.168.22.31:6443"
+            ],
+            "labels": {
+                "__address__": "192.168.22.31:6443",
+                "__scheme__": "http",
+                "__scrape_interval__": "5s",
+                "__scrape_timeout__": "5s"
+            }
+        }
+    ])JSON";
+    judgeFunc(case7, "/metrics", "http", 5, 5);
+}
+
 UNIT_TEST_CASE(TargetSubscriberSchedulerUnittest, OnInitScrapeJobEvent)
 UNIT_TEST_CASE(TargetSubscriberSchedulerUnittest, TestProcess)
 UNIT_TEST_CASE(TargetSubscriberSchedulerUnittest, TestParseTargetGroups)
 UNIT_TEST_CASE(TargetSubscriberSchedulerUnittest, TestBuildScrapeSchedulerSet)
+UNIT_TEST_CASE(TargetSubscriberSchedulerUnittest, TestTargetLabels)
 
 } // namespace logtail
 
