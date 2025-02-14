@@ -190,7 +190,8 @@ void ScrapeSchedulerUnittest::TestReceiveMessage() {
     Labels labels;
     labels.Set(prometheus::ADDRESS_LABEL_NAME, "localhost:8080");
     labels.Set(prometheus::ADDRESS_LABEL_NAME, "localhost:8080");
-    auto event = make_shared<ScrapeScheduler>(mScrapeConfig, "localhost", 8080, labels, 0, 0);
+    auto event
+        = make_shared<ScrapeScheduler>(mScrapeConfig, "localhost", 8080, "http", "/metrics", 15, 15, labels, 0, 0);
 
 
     // before
@@ -247,7 +248,7 @@ void ScrapeSchedulerUnittest::TestQueueIsFull() {
 void ScrapeSchedulerUnittest::TestExactlyScrape() {
     Labels labels;
     labels.Set(prometheus::ADDRESS_LABEL_NAME, "localhost:8080");
-    ScrapeScheduler event(mScrapeConfig, "localhost", 8080, "http", "/metrics", 15, 15, labels, 0, 0);
+    ScrapeScheduler event(mScrapeConfig, "localhost", 8080, "http", "/metrics", 10, 10, labels, 0, 0);
     auto defaultLabels = MetricLabels();
     event.InitSelfMonitor(defaultLabels);
     auto timer = make_shared<Timer>();
