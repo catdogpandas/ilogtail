@@ -163,9 +163,8 @@ bool TargetSubscriberScheduler::ParseScrapeSchedulerGroup(const std::string& con
         if (targets.empty()) {
             continue;
         }
-        // Parse labels
+        // Parse labels https://www.robustperception.io/life-of-a-label/
         Labels labels;
-        labels.Set(prometheus::JOB, mJobName);
         for (const auto& pair : mScrapeConfigPtr->mParams) {
             if (!pair.second.empty()) {
                 labels.Set(prometheus::PARAM_LABEL_NAME + pair.first, pair.second[0]);
@@ -176,6 +175,18 @@ bool TargetSubscriberScheduler::ParseScrapeSchedulerGroup(const std::string& con
             for (const string& labelKey : element[prometheus::LABELS].getMemberNames()) {
                 labels.Set(labelKey, element[prometheus::LABELS][labelKey].asString());
             }
+        }
+        if (labels.Get(prometheus::JOB).empty()) {
+            labels.Set(prometheus::JOB, mJobName);
+        }
+        if (labels.Get(prometheus::SCHEME_LABEL_NAME).empty()) {
+            labels.Set(prometheus::SCHEME_LABEL_NAME, mScrapeConfigPtr->mScheme);
+        }
+        if (labels.Get(prometheus::METRICS_PATH_LABEL_NAME).empty()) {
+            labels.Set(prometheus::METRICS_PATH_LABEL_NAME, mScrapeConfigPtr->mMetricsPath);
+        }
+        if (labels.Get(prometheus::ADDRESS_LABEL_NAME).empty()) {
+            continue;
         }
         scrapeSchedulerGroup.push_back(labels);
     }
@@ -203,14 +214,23 @@ TargetSubscriberScheduler::BuildScrapeSchedulerSet(std::vector<Labels>& targetGr
         }
 
         auto m = address.find(':');
-        if (m == string::npos) {
-            continue;
-        }
         int32_t port = 0;
-        try {
-            port = stoi(address.substr(m + 1));
-        } catch (...) {
-            continue;
+        if (m == string::npos) {
+            // if no port, use default port
+            if (resultLabel.Get(prometheus::SCHEME_LABEL_NAME) == prometheus::HTTP) {
+                port = 80;
+            } else if (resultLabel.Get(prometheus::SCHEME_LABEL_NAME) == prometheus::HTTPS) {
+                port = 443;
+            } else {
+                continue;
+            }
+        } else {
+            // parse port
+            try {
+                port = stoi(address.substr(m + 1));
+            } catch (...) {
+                continue;
+            }
         }
 
         string host = address.substr(0, m);
