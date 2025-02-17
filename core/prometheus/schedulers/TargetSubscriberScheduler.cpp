@@ -280,6 +280,12 @@ TargetSubscriberScheduler::BuildScrapeSchedulerSet(std::vector<Labels>& targetGr
         if (scrapeTimeoutSeconds == 0) {
             scrapeTimeoutSeconds = mScrapeConfigPtr->mScrapeTimeoutSeconds;
         }
+        if (scrapeIntervalSeconds == 0 || scrapeTimeoutSeconds == 0) {
+            LOG_ERROR(sLogger,
+                      ("job", mJobName)("scrapeIntervalSeconds:", scrapeIntervalSeconds)("scrapeTimeoutSeconds:",
+                                                                                         scrapeTimeoutSeconds));
+            continue;
+        }
 
         auto scrapeScheduler = std::make_shared<ScrapeScheduler>(mScrapeConfigPtr,
                                                                  host,
